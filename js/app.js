@@ -27,13 +27,14 @@
   }
 
   /* ---------- loading ---------- */
-  function loadText(text, name) {
+  function loadText(text, name, sources = new Map([[name, text]])) {
     let doc;
-    try { doc = jsyaml.load(text); } catch (e) { return msg(`YAML parse error: ${e.message}`, true); }
-    if (!doc || typeof doc !== 'object' || !doc.ecus || typeof doc.ecus !== 'object') {
-      return msg('Not a RAL file: missing top-level "ecus" key', true);
+    try { doc = R.parseRal(text, name, sources); } catch (e) { return msg(`Could not load ${name}: ${e.message}`, true); }
+    if (!doc || typeof doc !== 'object' || !doc.ecus || typeof doc.ecus !== 'object' ||
+        Array.isArray(doc.ecus) || !Object.keys(doc.ecus).length) {
+      return msg('Not a RAL file: expected a non-empty top-level "ecus" mapping', true);
     }
-    Object.assign(state, { doc, file: name, text, ecus: Object.keys(doc.ecus), selKey: null, svc: null, selRow: null });
+    Object.assign(state, { doc, file: name, text, sources, ecus: Object.keys(doc.ecus), selKey: null, svc: null, selRow: null });
     state.cache.clear();
     state.open.clear();
     selectEcu(state.ecus[0]);
@@ -47,7 +48,7 @@
 
   async function loadDefault() {
     if (window.RAL_STANDALONE) {
-      if (state.text) return loadText(state.text, state.file);
+      if (state.text) return loadText(state.text, state.file, state.sources);
       renderAll();
       msg('Open a RAL file: File ▸ Open, the Open button, or drag & drop a .ral / .yaml file onto this window.');
       return;
@@ -62,12 +63,19 @@
     }
   }
 
-  function loadFile(file) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => loadText(reader.result, file.name);
-    reader.onerror = () => msg(`Could not read ${file.name}`, true);
-    reader.readAsText(file);
+  async function loadFiles(files) {
+    if (!files.length) return;
+    try {
+      const sources = new Map();
+      for (const file of files) {
+        if (sources.has(file.name)) throw new Error(`Duplicate filename "${file.name}". Select files with unique names.`);
+        sources.set(file.name, await file.text());
+      }
+      const name = R.ralRootName(sources);
+      loadText(sources.get(name), name, sources);
+    } catch (e) {
+      msg(`Could not open RAL files: ${e.message}`, true);
+    }
   }
 
   function selectEcu(name) {
@@ -475,7 +483,7 @@
     filterTimer = setTimeout(() => { state.filter = e.target.value; renderTree(); }, 120);
   });
 
-  $('file-input').addEventListener('change', (e) => { loadFile(e.target.files[0]); e.target.value = ''; });
+  $('file-input').addEventListener('change', (e) => { loadFiles([...e.target.files]); e.target.value = ''; });
 
   /* drag & drop */
   let dragDepth = 0;
@@ -486,7 +494,7 @@
     e.preventDefault();
     dragDepth = 0;
     document.body.classList.remove('dragging');
-    loadFile(e.dataTransfer.files[0]);
+    loadFiles([...e.dataTransfer.files]);
   });
 
   /* ---------- splitters & column resize ---------- */

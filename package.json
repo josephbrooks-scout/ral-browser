@@ -5,6 +5,7 @@
   "description": "ODX-Browser-style viewer for RAL diagnostic YAML",
   "scripts": {
     "start": "node server.js 8080",
-    "build": "node build.js"
+    "build": "node build.js",
+    "test": "node --test tests/*.test.js"
   }
 }

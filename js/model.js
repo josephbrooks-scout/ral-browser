@@ -380,7 +380,7 @@
     const d = (ecu && ecu.diagnostics) || {};
     const routines = d.routine_controls || {};
     const dids = d.dids || {};
-    const dtcs = d.dtcs || {};
+    const dtcs = Object.fromEntries(Object.entries(d.dtcs || {}).map(([name, item]) => [name, item.dtc || item]));
     const monitors = d.monitors || {};
     const byName = (o) => Object.keys(o).sort((a, b) => human(a).localeCompare(human(b)));
     const k = (s) => `${ecuName}:${s}`;

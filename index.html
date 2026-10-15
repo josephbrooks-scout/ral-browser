@@ -122,12 +122,13 @@
   <footer class="statusbar"><span id="status-msg"></span></footer>
 </div>
 <div id="modal-root"></div>
-<div id="drop-hint"><div>Drop a RAL file to open it</div></div>
-<input type="file" id="file-input" accept=".yaml,.yml,.ral,.txt" hidden>
+<div id="drop-hint"><div>Drop a RAL file and any companion files to open them</div></div>
+<input type="file" id="file-input" accept=".yaml,.yml,.ral,.txt" multiple hidden>
 
 <script src="vendor/js-yaml.min.js"></script>
 <script src="js/codec.js"></script>
 <script src="js/model.js"></script>
+<script src="js/loader.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

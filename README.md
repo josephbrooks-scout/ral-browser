@@ -66,6 +66,12 @@ org members can open the URL.
 
 ## Supported RAL layouts
 
+- Self-contained files and bundles using scalar `!include` and dotted-path `!ref` tags are supported.
+  For a bundle, select the main `.ral` **and all companion files** together in Open (multi-select),
+  or drag them in together. Selection order does not matter. Include mappings are merged first,
+  then the main file's values take precedence; references resolve against the merged document.
+  Missing files, unresolved references and cycles are reported as errors, never silently skipped.
+  The browser cannot read neighboring files automatically; all companion files must be selected.
 - Both the older nested layout (`dids.<name>.did`, `routine_controls.<name>.routine`) and the flat
   schema 1.15+ layout (fields directly on the item) are read.
 - `type: field` arrays become STATIC-FIELD / DYNAMIC-LENGTH-FIELD / END-OF-PDU-FIELD rows. Fixed arrays
