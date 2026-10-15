@@ -104,3 +104,22 @@ test('references cannot resolve inherited object properties', () => {
   assert.equal(doc.x, true);
   assert.equal({}.polluted, undefined);
 });
+
+test('routines have one alphabetical tree entry and only supported operations', () => {
+  const model = R.buildEcu('example', { diagnostics: { routine_controls: {
+    zebra: { id: 0x1001, start: {}, stop: {}, request_results: {} },
+    alpha: { routine: { id: 0x1002, request_results: {} } },
+  } } });
+  const routines = model.services.find((f) => f.label.startsWith('0x31')).children;
+  assert.equal(routines.length, 2);
+  assert.equal(routines[0].label, 'Alpha (0x1002)');
+  assert.equal(routines[1].label, 'Zebra (0x1001)');
+  assert.equal(routines[0].operations.map((op) => op.key).join(','), 'request_results');
+  assert.equal(routines[1].operations.map((op) => op.label).join(','), 'Start,Stop,Request Results');
+  assert.equal(R.pduText(routines[0].build().request[0]), '31 03 10 02');
+  for (const [index, op] of routines[1].operations.entries()) {
+    const svc = op.build();
+    assert.equal(R.pduText(svc.request[0]), `31 0${index + 1} 10 01`);
+    assert.equal(R.pduText(svc.responses[0]), `71 0${index + 1} 10 01`);
+  }
+});

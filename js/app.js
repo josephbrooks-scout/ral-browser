@@ -13,6 +13,7 @@
     doc: null, file: '', ecus: [], ecu: null, model: null,
     tab: 'services', open: new Set(), selKey: null, svc: null, filter: '',
     longNames: true, showInfo: true, cache: new Map(), index: new Map(), visible: [],
+    routineOperations: new Map(),
     cols: [320, 190, 100, 260, 150, 70, 170], selRow: null,
   };
 
@@ -36,6 +37,7 @@
     }
     Object.assign(state, { doc, file: name, text, sources, ecus: Object.keys(doc.ecus), selKey: null, svc: null, selRow: null });
     state.cache.clear();
+    state.routineOperations.clear();
     state.open.clear();
     selectEcu(state.ecus[0]);
     state.open.add('loc:file');
@@ -154,6 +156,11 @@
     renderTree();
   }
 
+  function serviceSelection(n) {
+    const operation = n.operations && (n.operations.find((op) => op.key === state.routineOperations.get(n.key)) || n.operations[0]);
+    return { key: operation ? `${n.key}:${operation.key}` : n.key, build: operation ? operation.build : n.build };
+  }
+
   function selectNode(n, { scroll = false } = {}) {
     state.selKey = n.key;
     if (n.ecu) {
@@ -163,8 +170,9 @@
       $('ecu-label').textContent = state.ecu;
       renderGrids();
     } else if (n.build) {
-      if (!state.cache.has(n.key)) state.cache.set(n.key, n.build());
-      state.svc = state.cache.get(n.key);
+      const selection = serviceSelection(n);
+      if (!state.cache.has(selection.key)) state.cache.set(selection.key, selection.build());
+      state.svc = state.cache.get(selection.key);
       state.selRow = null;
       renderGrids();
     }
@@ -272,10 +280,24 @@
 
   function renderGrids() {
     const svc = state.svc;
+    const node = state.index.get(state.selKey);
+    const control = $('routine-control');
+    control.hidden = !node?.operations;
+    const select = $('routine-operation');
+    select.innerHTML = node?.operations
+      ? node.operations.map((op) => `<option value="${esc(op.key)}">${esc(op.label)}</option>`).join('') : '';
+    if (node?.operations) select.value = state.routineOperations.get(node.key) || node.operations[0].key;
     renderGrid(gridReq, svc ? svc.request : [], svc ? svc.emptyRequest || '' : 'No service selected.');
     renderGrid(gridResp, svc ? svc.responses : [], '');
     renderInfo();
   }
+
+  $('routine-operation').addEventListener('change', (e) => {
+    const node = state.index.get(state.selKey);
+    if (!node?.operations) return;
+    state.routineOperations.set(node.key, e.target.value);
+    selectNode(node);
+  });
 
   function onGridClick(e) {
     const grid = e.currentTarget;
@@ -412,7 +434,7 @@
     reset: () => {
       const n = state.index.get(state.selKey);
       if (!n || !n.build) return;
-      state.cache.delete(n.key);
+      state.cache.delete(serviceSelection(n).key);
       selectNode(n);
       msg('Values reset');
     },

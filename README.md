@@ -40,7 +40,9 @@ org members can open the URL.
   - `0x19` Read DTC Information (one entry per DTC)
   - `0x22` / `0x2E` Read / Write Data By Identifier (from each DID's `RDBI` / `WDBI`)
   - `0x27` Security Access (levels referenced by `security_levels`)
-  - `0x31` Routine Control (Start / Stop / Request Results per routine)
+  - `0x31` Routine Control (one entry per routine; choose its available Start / Stop / Request Results
+    operation in the Request pane dropdown). Edits are preserved separately for each operation;
+    Reset values resets only the selected operation.
 - **Sub Components**: Monitors (with linked DTC) and DTCs grouped by domain.
 - **Request / Responses**: parameter grid with Name, ParamType, DataType, Value, PDU, Unit and Scaling columns. Responses include the positive response, the service negative response and the generic "UDS on CAN" negative response.
 - **Details**: ID, sessions, security levels, request PDU and the description text.

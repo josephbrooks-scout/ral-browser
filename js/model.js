@@ -436,8 +436,14 @@
 
     const routineLeaves = byName(routines).flatMap((n) => {
       const rt = routineOf(routines[n]);
-      return SUBFUNCS.filter(([key]) => rt[key]).map(([key, sub, label]) =>
-        leaf(k(`31:${n}:${key}`), `Routine Control / ${human(n)} / ${label}`, `${n}_${label.replace(/ /g, '')}`, () => buildRoutine(n, rt, key, sub, label), hex(rt.id, 16), `Routine Control / ${human(n)}`));
+      const operations = SUBFUNCS.filter(([key]) => rt[key]).map(([key, sub, label]) => ({
+        key, label, build: () => buildRoutine(n, rt, key, sub, label),
+      }));
+      if (!operations.length) return [];
+      return [{
+        ...leaf(k(`31:${n}`), human(n), n, operations[0].build, hex(rt.id, 16)),
+        operations,
+      }];
     });
 
     const services = [

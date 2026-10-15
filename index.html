@@ -104,7 +104,11 @@
     <div class="splitter-v" id="split-main"></div>
     <section class="right" id="right">
       <div class="pane card" id="pane-req">
-        <div class="pane-head"><span class="pane-dot req"></span>Request</div>
+        <div class="pane-head"><span class="pane-dot req"></span>Request
+          <label id="routine-control" class="routine-control" hidden>Operation
+            <select id="routine-operation" aria-label="Routine operation"></select>
+          </label>
+        </div>
         <div class="grid" id="grid-req"></div>
       </div>
       <div class="splitter-h" id="split-rr"></div>

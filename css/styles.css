@@ -154,6 +154,10 @@ button { font: inherit; color: inherit; }
 .pane-dot.req { background: var(--navy); }
 .pane-dot.pos { background: var(--success); }
 .pane-dot.det { background: var(--scout-orange); }
+.routine-control { margin-left: auto; display: flex; align-items: center; gap: 10px; letter-spacing: .05em; }
+.routine-control[hidden] { display: none; }
+.routine-control select { font: inherit; letter-spacing: normal; color: var(--navy); background: white;
+  border: 1px solid var(--line); border-radius: 6px; padding: 5px 28px 5px 10px; }
 
 /* ---------- grid ---------- */
 .grid { flex: 1; overflow: auto; position: relative; user-select: none; }
