@@ -1,0 +1,7 @@
+# Build output (published by the Pages workflow, not committed)
+dist/
+# RAL data stays local; users open their own files in the browser
+data/
+*.ral
+.DS_Store
+node_modules/

@@ -1,0 +1,10 @@
+{
+  "name": "ral-browser",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ODX-Browser-style viewer for RAL diagnostic YAML",
+  "scripts": {
+    "start": "node server.js 8080",
+    "build": "node build.js"
+  }
+}
