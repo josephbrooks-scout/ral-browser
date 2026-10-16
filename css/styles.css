@@ -51,11 +51,12 @@ button { font: inherit; color: inherit; }
 ::-webkit-scrollbar-corner { background: transparent; }
 
 /* ---------- app bar ---------- */
-.appbar { display: flex; align-items: center; gap: 20px; height: 52px; padding: 0 16px; background: var(--navy); color: var(--white); flex: none; }
+.appbar { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 16px; background: var(--white);
+  color: var(--navy); border-bottom: 1px solid var(--line); flex: none; flex-wrap: wrap; }
 
 .menubar { display: flex; gap: 2px; height: 100%; align-items: center; user-select: none; }
-.menu { position: relative; padding: 6px 10px; border-radius: 6px; cursor: default; color: rgba(255, 255, 255, .82); }
-.menu:hover, .menu.open { background: rgba(255, 255, 255, .1); color: var(--white); }
+.menu { position: relative; padding: 6px 8px; border-radius: 6px; cursor: default; color: var(--navy); }
+.menu:hover, .menu.open { background: var(--warm-100); }
 .menu-pop { display: none; position: absolute; left: 0; top: calc(100% + 6px); min-width: 240px; padding: 6px; z-index: 50;
   background: var(--white); color: var(--charcoal); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 32px rgba(17, 35, 47, .18); }
 .menu.open .menu-pop { display: block; }
@@ -65,14 +66,15 @@ button { font: inherit; color: inherit; }
 .mi:hover .acc { color: inherit; }
 .sep { height: 1px; background: var(--line); margin: 5px 4px; }
 
-.ecu-chip { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px 0 10px; border-radius: 999px; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .14); white-space: nowrap; }
+.ecu-chip { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px 0 10px; border-radius: 999px;
+  background: var(--warm-50); border: 1px solid var(--line); white-space: nowrap; margin-left: auto; }
 .ecu-chip .i { color: var(--scout-orange); width: 16px; height: 16px; }
-.ecu-k { font-size: 10px; letter-spacing: .14em; color: rgba(255, 255, 255, .55); }
+.ecu-k { font-size: 10px; letter-spacing: .14em; color: var(--stone); }
 #ecu-label { font-family: var(--mono); font-weight: 500; }
 
 /* ---------- toolbar ---------- */
-.toolbar { display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px; background: var(--white); border-bottom: 1px solid var(--line); flex: none; }
-.tgroup { display: flex; align-items: center; gap: 4px; padding-right: 12px; border-right: 1px solid var(--line); }
+.toolbar { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; flex-wrap: wrap; }
+.tgroup { display: flex; align-items: center; gap: 4px; padding-right: 8px; border-right: 1px solid var(--line); }
 .tb { display: inline-flex; align-items: center; gap: 6px; height: 34px; min-width: 34px; padding: 0 9px; justify-content: center;
   border: 1px solid transparent; border-radius: 8px; background: none; color: var(--navy); cursor: pointer; white-space: nowrap; transition: background .12s, color .12s; }
 .tb:hover { background: var(--warm-100); }
@@ -80,7 +82,7 @@ button { font: inherit; color: inherit; }
 .tb.primary { background: var(--scout-orange); color: var(--white); padding: 0 14px 0 11px; font-weight: 600; }
 .tb.primary:hover { background: var(--scout-orange-600); }
 .tb.primary:active { background: var(--scout-orange-700); }
-.search { display: flex; align-items: center; gap: 8px; height: 36px; width: min(420px, 34vw); padding: 0 10px 0 12px; border-radius: 999px;
+.search { display: flex; align-items: center; gap: 8px; height: 36px; flex: 1; min-width: 180px; max-width: 420px; padding: 0 10px 0 12px; border-radius: 999px;
   background: var(--warm-50); border: 1px solid var(--line); color: var(--stone); transition: border-color .12s, box-shadow .12s, background .12s; }
 .search:focus-within { background: var(--white); border-color: var(--scout-orange); box-shadow: 0 0 0 3px rgba(255, 84, 50, .15); }
 .search input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font: inherit; color: var(--charcoal); }

@@ -54,15 +54,7 @@
         </div>
       </div>
     </nav>
-    <span class="spacer"></span>
-    <div class="ecu-chip" title="Active ECU">
-      <svg class="i"><use href="#i-ecu"/></svg>
-      <span class="ecu-k">ECU</span>
-      <span id="ecu-label">—</span>
-    </div>
-  </header>
-
-  <div class="toolbar">
+    <div class="toolbar">
     <div class="tgroup">
       <button class="tb primary" data-cmd="open" title="Open RAL file (Ctrl+O)"><svg class="i"><use href="#i-open"/></svg><span>Open</span></button>
       <button class="tb" data-cmd="reload" title="Reload default file"><svg class="i"><use href="#i-reload"/></svg></button>
@@ -82,9 +74,14 @@
       <input id="filter" type="search" placeholder="Filter services by name or 0x ID" spellcheck="false">
       <kbd>Ctrl F</kbd>
     </label>
-    <span class="spacer"></span>
     <button class="tb" data-cmd="about" title="About"><svg class="i"><use href="#i-info"/></svg></button>
-  </div>
+    </div>
+    <div class="ecu-chip" title="Active ECU">
+      <svg class="i"><use href="#i-ecu"/></svg>
+      <span class="ecu-k">ECU</span>
+      <span id="ecu-label">—</span>
+    </div>
+  </header>
 
   <div class="main" id="main">
     <aside class="left card" id="left">

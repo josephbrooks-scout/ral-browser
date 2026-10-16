@@ -34,7 +34,8 @@ org members can open the URL.
 
 ## Layout
 
-The header contains menus and the ECU indicator, without a logo/title block. There is no footer
+One unified top bar contains menus, toolbar actions, search and the ECU indicator, without a logo/title block.
+Controls wrap on narrow windows rather than being clipped. There is no footer
 status bar: feedback appears in a floating notification. Routine messages disappear after six
 seconds; import errors and warnings remain until replaced by another message.
 
