@@ -24,11 +24,6 @@
 </svg>
 <div id="app">
   <header class="appbar">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <span class="brand-name">RAL Browser</span>
-      <span class="brand-sub">Diagnostics</span>
-    </div>
     <nav class="menubar" id="menubar">
       <div class="menu">File
         <div class="menu-pop">
@@ -123,8 +118,8 @@
       </div>
     </section>
   </div>
-  <footer class="statusbar"><span id="status-msg"></span></footer>
 </div>
+<div id="status-msg" role="status" aria-live="polite" hidden></div>
 <div id="modal-root"></div>
 <div id="drop-hint"><div>Drop a RAL file and any companion files to open them</div></div>
 <input type="file" id="file-input" accept=".yaml,.yml,.ral,.txt" multiple hidden>

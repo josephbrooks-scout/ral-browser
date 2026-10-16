@@ -52,11 +52,6 @@ button { font: inherit; color: inherit; }
 
 /* ---------- app bar ---------- */
 .appbar { display: flex; align-items: center; gap: 20px; height: 52px; padding: 0 16px; background: var(--navy); color: var(--white); flex: none; }
-.brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
-.brand-mark { width: 22px; height: 22px; border-radius: 6px; background: var(--scout-orange); position: relative; }
-.brand-mark::after { content: ""; position: absolute; inset: 6px 6px 6px 6px; border: 2px solid var(--navy); border-top: none; border-left: none; transform: rotate(-45deg) translate(-1px, -1px); }
-.brand-name { font-weight: 700; letter-spacing: .16em; text-transform: uppercase; font-size: 13px; }
-.brand-sub { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255, 255, 255, .55); padding-left: 10px; border-left: 1px solid rgba(255, 255, 255, .2); }
 
 .menubar { display: flex; gap: 2px; height: 100%; align-items: center; user-select: none; }
 .menu { position: relative; padding: 6px 10px; border-radius: 6px; cursor: default; color: rgba(255, 255, 255, .82); }
@@ -107,8 +102,9 @@ button { font: inherit; color: inherit; }
 .status { flex: none; display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-top: 1px solid var(--line-soft);
   color: var(--stone); font: 12px var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--warm-50); }
 .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--success); flex: none; }
-.statusbar { flex: none; height: 28px; display: flex; align-items: center; padding: 0 18px; color: var(--stone); font-size: 12px; background: var(--warm-50); border-top: 1px solid var(--line); }
-#status-msg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#status-msg { position: fixed; bottom: 16px; right: 16px; z-index: 1000; max-width: min(640px, calc(100vw - 32px));
+  max-height: 35vh; overflow: auto; overflow-wrap: anywhere; padding: 12px 16px; border: 1px solid var(--line);
+  border-radius: 10px; background: var(--white); color: var(--stone); font-size: 12px; box-shadow: 0 4px 20px #11232f26; }
 #status-msg.err { color: var(--scout-orange-700); font-weight: 600; }
 #status-msg.err::before { content: "● "; }
 

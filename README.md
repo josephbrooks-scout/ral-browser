@@ -34,6 +34,10 @@ org members can open the URL.
 
 ## Layout
 
+The header contains menus and the ECU indicator, without a logo/title block. There is no footer
+status bar: feedback appears in a floating notification. Routine messages disappear after six
+seconds; import errors and warnings remain until replaced by another message.
+
 - **Location**: the loaded file, its ECUs (B) and variants (E). Selecting one shows an ECU summary.
 - **Services**: UDS services derived from the RAL data:
   - `0x10` Diagnostic Session Control (sessions referenced by DIDs/routines)

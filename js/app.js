@@ -22,9 +22,12 @@
   function msg(text, isErr = false) {
     const el = $('status-msg');
     el.textContent = text;
+    el.hidden = !text;
     el.classList.toggle('err', isErr);
     clearTimeout(msgTimer);
-    if (!isErr) msgTimer = setTimeout(() => { if (el.textContent === text) el.textContent = ''; }, 6000);
+    if (!isErr) msgTimer = setTimeout(() => {
+      if (el.textContent === text) { el.textContent = ''; el.hidden = true; }
+    }, 6000);
   }
 
   /* ---------- loading ---------- */
