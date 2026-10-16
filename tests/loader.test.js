@@ -123,3 +123,77 @@ test('routines have one alphabetical tree entry and only supported operations', 
     assert.equal(R.pduText(svc.responses[0]), `71 0${index + 1} 10 01`);
   }
 });
+
+test('defaults-based exports map ECU membership, types, access and operation metadata', () => {
+  const text = `name: example
+dids:
+  measured:
+    description: Measured value
+    defaults:
+      ecu: [airbag, second]
+      id: 0x2345
+      read: {supported_session_types: [Default]}
+      write: {supported_session_types: [Extended], supported_security_levels: [7]}
+      values:
+        - name: voltage
+          bit_length: 8
+          start_bit: 0
+          uint: {linear_scaling: 0.1, offset: 1, minimum: 0, maximum: 200, default: 10}
+        - name: state
+          bit_length: 8
+          start_bit: 8
+          uint: {options: {off: 0, on: 1}}
+routine_controls:
+  demo:
+    defaults:
+      ecu: [airbag]
+      id: 0x1234
+      start: {supported_session_types: [Extended], supported_security_levels: [7]}
+      request_results: {supported_session_types: [Default]}
+`;
+  assert.equal(R.ralRootName(new Map([['example.yaml', text]])), 'example.yaml');
+  const doc = R.parseRal(text, 'example.yaml');
+  assert.equal(Object.keys(doc.ecus).join(','), 'airbag,second');
+  assert.equal(doc.importWarnings.length, 0);
+  const model = R.buildEcu('airbag', doc.ecus.airbag);
+  assert.equal(model.summary['Readable DIDs'], 1);
+  assert.equal(model.summary['Writable DIDs'], 1);
+  const read = model.services.find((f) => f.label.startsWith('0x22')).children[0].build();
+  const voltage = read.responses[0].children[2].children[0];
+  assert.equal(R.valueText(voltage), '2.0');
+  assert.equal(voltage.max, 200);
+  assert.equal(read.info.Description, 'Measured value');
+  assert.equal(R.pduText(read.request[0]), '22 23 45');
+  const write = model.services.find((f) => f.label.startsWith('0x2E')).children[0].build();
+  assert.equal(write.info['Security levels'], '7');
+  const routine = model.services.find((f) => f.label.startsWith('0x31')).children[0];
+  assert.equal(routine.operations[0].build().info.Sessions, 'Extended');
+  assert.equal(routine.operations[1].build().info.Sessions, 'Default');
+  assert.equal(routine.operations[1].build().info['Security levels'], 'none');
+});
+
+test('defaults export reports ambiguous bit positions and rejects unknown value types', () => {
+  const text = `name: example
+dids:
+  demo:
+    defaults:
+      ecu: [airbag]
+      id: 1
+      read: {}
+      values:
+        - {name: first, bit_length: 8, start_bit: 0, uint: {}}
+        - {name: second, bit_length: 8, start_bit: 0, string: {output_format: hexstring}}
+`;
+  const doc = R.parseRal(text, 'example.yaml');
+  assert.equal(doc.importWarnings.length, 1);
+  assert.match(doc.importWarnings[0], /DID demo: non-sequential start_bit/);
+  assert.equal(doc.ecus.airbag.diagnostics.dids.demo.values[1].user_codec, 'hexstring');
+  assert.throws(() => R.parseRal(text.replace('uint: {}', 'unknown: {}'), 'example.yaml'), /Unsupported value type/);
+});
+
+test('hexstring defaults retain their full integer precision', () => {
+  const row = R.fieldRow({ name: 'data', type: 'string', user_codec: 'hexstring',
+    bit_length: 64, default: '9007199254740993' });
+  assert.equal(row.raw, 9007199254740993n);
+  assert.equal(R.pduText(row), '0x0020000000000001');
+});

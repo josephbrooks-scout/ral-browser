@@ -38,6 +38,74 @@
     return parts.join('/');
   }
 
+  const defaultsExport = (doc) => mapping(doc) && typeof doc.name === 'string' &&
+    ['dids', 'routine_controls'].some((section) => mapping(doc[section]) &&
+      Object.values(doc[section]).some((item) => mapping(item) && mapping(item.defaults)));
+
+  function normalizeExport(doc) {
+    if (doc?.ecus || !defaultsExport(doc)) return doc;
+    const ecus = Object.create(null), warnings = [];
+    const access = (source) => ({
+      ...source,
+      session_types: source.supported_session_types || [],
+      security_levels: source.supported_security_levels || [],
+    });
+    function fields(values, location) {
+      let nextBit = 0;
+      let overlaps = false;
+      const result = (values || []).map((field) => {
+        const types = ['uint', 'sint', 'string'].filter((type) => mapping(field[type]));
+        if (types.length !== 1) throw new Error(`Unsupported value type at ${location} / ${field.name}`);
+        const type = types[0], value = field[type];
+        if (field.start_bit !== undefined && field.start_bit !== nextBit) overlaps = true;
+        nextBit = Number(field.start_bit ?? nextBit) + Number(field.bit_length);
+        return {
+          ...field, type,
+          enum: value.options, scale: value.linear_scaling, offset: value.offset,
+          min: value.minimum, max: value.maximum, default: value.default,
+          user_codec: value.output_format,
+        };
+      });
+      if (overlaps) warnings.push(`${location}: non-sequential start_bit positions; preview packs fields in listed order. Verify the source layout before using its PDU.`);
+      return result;
+    }
+    for (const section of ['dids', 'routine_controls']) {
+      for (const [name, entry] of Object.entries(doc[section] || {})) {
+        const source = entry.defaults;
+        if (!mapping(source) || !Array.isArray(source.ecu) || !source.ecu.length ||
+            source.ecu.some((ecu) => typeof ecu !== 'string' || !ecu)) {
+          throw new Error(`Missing defaults.ecu list for ${section} / ${name}`);
+        }
+        const item = { ...source, description: entry.description || source.description || '' };
+        if (section === 'dids') {
+          if (source.read) item.RDBI = access(source.read);
+          if (source.write) item.WDBI = access(source.write);
+          item.values = fields(source.values, `DID ${name}`);
+        } else {
+          const sessions = new Set(), security = new Set();
+          for (const key of ['start', 'stop', 'request_results']) {
+            if (!source[key]) continue;
+            const part = access(source[key]);
+            part.session_types.forEach((session) => sessions.add(session));
+            part.security_levels.forEach((level) => security.add(level));
+            item[key] = {
+              ...part,
+              inputs: fields(part.inputs, `Routine ${name} / ${key} inputs`),
+              outputs: fields(part.outputs, `Routine ${name} / ${key} outputs`),
+            };
+          }
+          item.session_types = [...sessions];
+          item.security_levels = [...security];
+        }
+        for (const ecu of source.ecu) {
+          if (!own(ecus, ecu)) put(ecus, ecu, { diagnostics: { dids: Object.create(null), routine_controls: Object.create(null) } });
+          put(ecus[ecu].diagnostics[section], name, item);
+        }
+      }
+    }
+    return { ...doc, ecus, importWarnings: warnings };
+  }
+
   R.parseRal = (text, name, sources = new Map([[name, text]])) => {
     const files = new Map();
     for (const [path, source] of sources) files.set(normalize(path), source);
@@ -118,13 +186,13 @@
       resolved.set(value, out);
       return out;
     }
-    return resolve(doc);
+    return normalizeExport(resolve(doc));
   };
 
   R.ralRootName = (sources) => {
     const roots = [...sources].filter(([name, text]) => {
       const doc = jsyaml.load(text, { schema, filename: name });
-      return mapping(doc) && mapping(doc.ecus) && Object.keys(doc.ecus).length > 0;
+      return (mapping(doc) && mapping(doc.ecus) && Object.keys(doc.ecus).length > 0) || defaultsExport(doc);
     }).map(([name]) => name);
     if (roots.length !== 1) throw new Error(roots.length
       ? 'Select one main RAL file plus its companions, not multiple ECU exports.'

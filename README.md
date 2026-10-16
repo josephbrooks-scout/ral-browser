@@ -68,6 +68,12 @@ org members can open the URL.
 
 ## Supported RAL layouts
 
+- Defaults-based YAML exports (`name`, top-level `dids` / `routine_controls`, and
+  per-entry `defaults.ecu`) are converted to the ECU layout. Nested `uint` / `sint` / `string`
+  properties supply enums, scaling, limits, defaults and codecs; read/write permissions and
+  operation-specific sessions/security are preserved. Non-sequential `start_bit` positions
+  produce a persistent import warning: PDU previews pack fields in listed order, so those
+  source layouts need verification.
 - Self-contained files and bundles using scalar `!include` and dotted-path `!ref` tags are supported.
   For a bundle, select the main `.ral` **and all companion files** together in Open (multi-select),
   or drag them in together. Selection order does not matter. Include mappings are merged first,

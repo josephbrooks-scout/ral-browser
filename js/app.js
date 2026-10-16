@@ -45,7 +45,9 @@
     document.title = `${name} - RAL Browser`;
     renderAll();
     const s = state.model.summary;
-    msg(`Loaded ${name}: ${state.ecus.length} ECU(s), ${s.DIDs} DIDs, ${s.Routines} routines, ${s.DTCs} DTCs, ${s.Monitors} monitors`);
+    const loaded = `Loaded ${name}: ${state.ecus.length} ECU(s), ${s.DIDs} DIDs, ${s.Routines} routines, ${s.DTCs} DTCs, ${s.Monitors} monitors`;
+    const warnings = doc.importWarnings || [];
+    msg(warnings.length ? `${loaded}. Import warnings: ${warnings.join(' ')}` : loaded, warnings.length > 0);
   }
 
   async function loadDefault() {

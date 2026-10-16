@@ -125,7 +125,8 @@
     base.raw = base.defRaw = defRaw;
 
     if (f.type === 'string' && f.user_codec === 'hexstring') {
-      return P(f.name, { ...base, kind: 'bytes', paramType: 'IDENTICAL', dataType: 'BYTEFIELD', scaling: 'hexstring' });
+      const raw = f.default === undefined ? 0n : BigInt(f.default);
+      return P(f.name, { ...base, raw, defRaw: raw, kind: 'bytes', paramType: 'IDENTICAL', dataType: 'BYTEFIELD', scaling: 'hexstring' });
     }
     if (f.type === 'string') {
       const text = asciiDefault(f.default, bits);
@@ -235,6 +236,7 @@
 
   function buildRoutine(name, rt, key, sub, label) {
     const part = rt[key] || {};
+    const access = part.session_types ? part : rt;
     const sid = constRow('Service Identifier', 0x31, 8);
     const subRow = constRow('Routine Control Type', sub, 8);
     const rid = constRow('Routine Identifier', rt.id, 16);
@@ -250,7 +252,7 @@
       responses: [root('Routine Control Positive Response', 'pos', posChildren), ...negativeRoots('Routine Control', sid)],
       info: {
         Service: `0x31 Routine Control (${hex(sub)} ${label})`, 'Short name': name, 'Routine Identifier': hex(rt.id, 16),
-        Sessions: sessionsText(rt), 'Security levels': securityText(rt), Access: accessText(rt),
+        Sessions: sessionsText(access), 'Security levels': securityText(access), Access: accessText(access),
         'Sub-functions': SUBFUNCS.filter(([k]) => rt[k]).map(([, , l]) => l).join(', '),
         'Text ID': rt.textidentifier ?? '', Description: rt.description || '',
       },
