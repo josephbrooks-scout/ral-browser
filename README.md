@@ -36,8 +36,8 @@ org members can open the URL.
 
 One unified top bar contains menus, toolbar actions, search and the ECU indicator, without a logo/title block.
 Controls wrap on narrow windows rather than being clipped. There is no footer
-status bar: feedback appears in a floating notification. Routine messages disappear after six
-seconds; import errors and warnings remain until replaced by another message.
+status bar: feedback appears in a floating notification. All notifications, including errors
+and warnings, disappear after four seconds.
 
 - **Location**: the loaded file, its ECUs (B) and variants (E). Selecting one shows an ECU summary.
 - **Services**: UDS services derived from the RAL data:

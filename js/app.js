@@ -25,9 +25,9 @@
     el.hidden = !text;
     el.classList.toggle('err', isErr);
     clearTimeout(msgTimer);
-    if (!isErr) msgTimer = setTimeout(() => {
+    msgTimer = setTimeout(() => {
       if (el.textContent === text) { el.textContent = ''; el.hidden = true; }
-    }, 6000);
+    }, 4000);
   }
 
   /* ---------- loading ---------- */
