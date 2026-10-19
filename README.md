@@ -69,6 +69,8 @@ duplicate named-object paths are rejected. Cross-file ARXML reference resolution
 Validation: `npm test` runs RAL regressions. To run the browser-specific ARXML tests, serve the app,
 load `tests/arxml.browser.js` into the app page, and call `runArxmlTests()` in that page's console.
 These use synthetic XML and require no diagnostic data.
+For full-message hex editing UI regressions, load `tests/pdu.browser.js` and call `runPduTests()`;
+these use a synthetic RAL fixture and replace the currently displayed data.
 
 ## RAL diagnostic view
 
@@ -87,6 +89,13 @@ These use synthetic XML and require no diagnostic data.
 
 ## Editing values
 
+- Click an underlined full-message **PDU hex** value to paste a complete request or response,
+  then choose **Apply & decode**. Data fields, enums and scaled values update together;
+  changed rows are highlighted with their previous value until another edit or selection.
+  Service IDs and matching request parameters remain fixed. Invalid hex, wrong lengths and
+  mismatched headers leave all values unchanged. Decoding uses the viewer's sequential layout;
+  variable-length arrays, differing repeated-array values, and unverified non-sequential layouts
+  are rejected explicitly. This edits the in-memory preview, not the source file or an ECU.
 - Click **▼** (or double-click a TEXTTABLE value) to open the **Select values** dialog (Text / TI / ID, with `negated`).
 - Double-click a numeric, byte-field or string value to type a value. You can enter a physical value, a raw `0x..` value or an enum text.
 - The PDU column shows each parameter's raw value. The root row shows the complete encoded message (bitfields packed MSB-first, `endianness: little` honored).

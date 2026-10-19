@@ -14,6 +14,7 @@
     tab: 'services', open: new Set(), selKey: null, svc: null, filter: '',
     longNames: true, showInfo: true, cache: new Map(), index: new Map(), visible: [],
     routineOperations: new Map(),
+    pduChanges: new Map(),
     cols: [320, 190, 100, 260, 150, 70, 170], selRow: null,
   };
 
@@ -43,6 +44,7 @@
     state.arxmlSource = null;
     Object.assign(state, { doc, file: name, text, sources, ecus: Object.keys(doc.ecus), selKey: null, svc: null, selRow: null });
     state.cache.clear();
+    state.pduChanges.clear();
     state.routineOperations.clear();
     state.open.clear();
     selectEcu(state.ecus[0]);
@@ -187,6 +189,7 @@
   }
 
   function selectNode(n, { scroll = false } = {}) {
+    state.pduChanges.clear();
     state.selKey = n.key;
     if (n.ecu) {
       if (n.ecu !== state.ecu) selectEcu(n.ecu);
@@ -253,6 +256,7 @@
   function rowEl(row, depth, idx) {
     const el = document.createElement('div');
     el.className = 'gr' + (row === state.selRow ? ' sel' : '');
+    if (state.pduChanges.has(row)) el.classList.add('pdu-changed');
     el.dataset.idx = idx;
     const hasKids = row.children && row.children.length;
     const val = R.valueText(row);
@@ -268,9 +272,20 @@
       `<div class="c" title="${esc(row.paramType)}">${esc(row.paramType)}</div>` +
       `<div class="c">${esc(row.dataType)}</div>` +
       `<div class="${valCls.join(' ')}" title="${esc(val)}">${esc(val)}${dd}</div>` +
-      `<div class="c" title="${esc(R.pduText(row))}">${esc(R.pduText(row))}</div>` +
+      `<div class="c pdu" title="${esc(R.pduText(row))}">${row.kind === 'root' && row.message
+        ? `<button class="pdu-edit" title="Edit full message hex and decode fields">${esc(R.pduText(row)) || 'Edit hex'}</button>`
+        : esc(R.pduText(row))}</div>` +
       `<div class="c">${esc(row.unit)}</div>` +
       `<div class="c" title="${esc(row.scaling)}">${esc(row.scaling)}</div>`;
+    const change = state.pduChanges.get(row);
+    if (change) {
+      const valueCell = el.querySelector('.val');
+      const note = document.createElement('small');
+      note.className = 'pdu-change-note';
+      note.textContent = `Was: ${change}`;
+      valueCell.appendChild(note);
+      valueCell.title = `${change} → ${val}`;
+    }
     return el;
   }
 
@@ -330,6 +345,7 @@
     if (!rEl) return;
     const row = grid._rows[+rEl.dataset.idx];
     if (!row) return;
+    if (e.target.closest('.pdu-edit')) return editPdu(row);
     if (e.target.classList.contains('exp')) { row.open = !row.open; return renderGrids(); }
     if (e.target.classList.contains('cb')) { row.checked = !row.checked; return renderGrids(); }
     if (e.target.classList.contains('dd')) { state.selRow = row; renderGrids(); return openSelect(row); }
@@ -351,6 +367,7 @@
   }
 
   function inlineEdit(grid, idx, row) {
+    state.pduChanges.clear();
     const cell = grid.querySelector(`.gr[data-idx="${idx}"] .c.val`);
     if (!cell) return;
     const input = document.createElement('input');
@@ -388,6 +405,41 @@
   });
 
   /* ---------- dialogs ---------- */
+  function editPdu(row) {
+    const { el, close } = modal(`<div class="dlg"><div class="dt">Edit message hex</div>
+      <div class="db"><p>Paste the complete PDU. Service IDs and matching request parameters must stay unchanged.</p>
+      <label>Message hex<textarea id="pdu-input" rows="4" spellcheck="false"></textarea></label>
+      <p id="pdu-error" role="alert"></p></div>
+      <div class="df"><button id="pdu-cancel">Cancel</button><button class="primary" id="pdu-apply">Apply &amp; decode</button></div></div>`);
+    const input = el.querySelector('#pdu-input');
+    input.value = R.pduText(row);
+    input.focus();
+    input.select();
+    el.querySelector('#pdu-cancel').addEventListener('click', close);
+    el.querySelector('#pdu-apply').addEventListener('click', () => {
+      try {
+        const before = new Map();
+        const snapshot = (rows) => (rows || []).forEach((field) => {
+          before.set(field, `${R.valueText(field)} [${R.pduText(field)}]`);
+          snapshot(field.children);
+        });
+        snapshot(state.svc.request); snapshot(state.svc.responses);
+        const changed = R.applyPdu(row, input.value);
+        state.pduChanges.clear();
+        for (const [field, value] of before) {
+          if (value !== `${R.valueText(field)} [${R.pduText(field)}]`) state.pduChanges.set(field, value);
+        }
+        close();
+        renderGrids();
+        const warnings = changed.filter(R.outOfRange);
+        msg(`Decoded message: ${changed.length} field(s) changed.${warnings.length ? ` ${warnings.length} field(s) outside declared limits (shown in red).` : ''}`, warnings.length > 0);
+      } catch (error) {
+        el.querySelector('#pdu-error').textContent = error.message;
+        input.setAttribute('aria-invalid', 'true');
+      }
+    });
+  }
+
   function modal(html, onKey) {
     const root = $('modal-root');
     root.innerHTML = `<div class="backdrop">${html}</div>`;
@@ -399,6 +451,7 @@
   }
 
   function openSelect(row) {
+    state.pduChanges.clear();
     const list = row.enumList || [];
     let sel = list.findIndex((x) => x.value === row.raw);
     const html = `<div class="dlg"><div class="dt">Select values</div><div class="db"><div class="vt">
@@ -461,6 +514,7 @@
       try { await navigator.clipboard.writeText(pdu); msg(`Copied request PDU: ${pdu}`); } catch { msg(`Request PDU: ${pdu}`); }
     },
     reset: () => {
+      state.pduChanges.clear();
       const n = state.index.get(state.selKey);
       if (!n || !n.build) return;
       state.cache.delete(serviceSelection(n).key);

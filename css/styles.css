@@ -76,6 +76,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--warm-5
   #arxml-summary { max-height: 20vh; overflow: auto; }
 }
 button { font: inherit; color: inherit; }
+.pdu-edit { border: 0; background: none; color: var(--scout-orange-700); font: inherit; padding: 0; cursor: pointer; text-decoration: underline dotted; }
+.gr.pdu-changed { background: var(--scout-orange-50); height: auto; min-height: 56px; }
+.pdu-change-note { display: block; font-size: 10px; color: var(--stone); }
+.gr.pdu-changed .c { min-height: 42px; height: auto; }
+#pdu-input { width: 100%; margin-top: 8px; font: 13px var(--mono); padding: 10px; }
+#pdu-error { color: var(--scout-orange-700); }
 :focus-visible { outline: 2px solid var(--scout-orange); outline-offset: 1px; }
 .i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .spacer { flex: 1; }

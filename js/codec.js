@@ -82,6 +82,73 @@
 
   R.encode = (rows) => encodeRows(rows, new BitWriter()).bytes();
 
+  R.applyPdu = (root, input) => {
+    if (root.kind !== 'root' || !root.message) throw new Error('Select a complete diagnostic message.');
+    const text = String(input).trim();
+    if (!/^(?:[0-9a-f]{2}\s*)+$/i.test(text)) throw new Error('Enter complete hexadecimal bytes, for example 62 01 2F 00.');
+    const bytes = text.replace(/\s/g, '').match(/../g).map((byte) => parseInt(byte, 16));
+    const fields = [];
+    function collect(rows) {
+      let nextBit = 0;
+      for (const row of rows || []) {
+        if (row.spec) {
+          if (row.spec.start_bit !== undefined && Number(row.spec.start_bit) !== nextBit) {
+            throw new Error(`${row.name}: non-sequential start_bit layout cannot be decoded safely.`);
+          }
+          nextBit += row.bits || 0;
+        }
+        if (row.kind === 'struct') {
+          if (row.spec && row.spec.size_type !== 'fixed_size') throw new Error('Decoding variable-length arrays is not supported.');
+          for (let i = 0; i < (row.repeat ?? 1); i++) collect(row.children);
+        } else if (row.bits && row.kind !== 'info' && !row.noPdu) fields.push(row);
+      }
+    }
+    collect(root.children);
+    const bits = fields.reduce((sum, row) => sum + (row.kind === 'string' ? Math.ceil(row.bits / 8) * 8 : row.bits), 0);
+    if (bytes.length !== Math.ceil(bits / 8)) throw new Error(`Expected ${Math.ceil(bits / 8)} bytes; received ${bytes.length}.`);
+    let position = 0;
+    const read = (count) => {
+      let value = 0n;
+      for (let i = 0; i < count; i++, position++) {
+        value = (value << 1n) | BigInt((bytes[position >> 3] >> (7 - position % 8)) & 1);
+      }
+      return value;
+    };
+    const updates = new Map();
+    for (const row of fields) {
+      let update;
+      if (row.kind === 'string') {
+        let value = '';
+        for (let i = 0; i < Math.ceil(row.bits / 8); i++) value += String.fromCharCode(Number(read(8)));
+        update = { text: value };
+      } else {
+        let raw;
+        if (row.endianness === 'little' && row.bits % 8 === 0 && row.bits > 8) {
+          raw = 0n;
+          for (let i = 0; i < row.bits / 8; i++) raw |= read(8) << BigInt(i * 8);
+        } else raw = read(row.bits);
+        if (row.kind === 'const' || row.kind === 'match' || row.fixedPdu) {
+          if (raw !== masked(rawOf(row), row.bits)) throw new Error(`${row.name} is fixed; expected ${hex(masked(rawOf(row), row.bits), row.bits)}.`);
+          continue;
+        }
+        if (row.signed && raw >= (1n << BigInt(row.bits - 1))) raw -= 1n << BigInt(row.bits);
+        update = { raw };
+      }
+      const previous = updates.get(row);
+      if (previous && (previous.raw !== update.raw || previous.text !== update.text)) {
+        throw new Error('Repeated array items have different values; this layout cannot represent them independently.');
+      }
+      updates.set(row, update);
+    }
+    if (bits % 8 && read(8 - bits % 8) !== 0n) throw new Error('Unused trailing padding bits must be zero.');
+    const changed = [];
+    for (const [row, update] of updates) {
+      if (('raw' in update && row.raw !== update.raw) || ('text' in update && row.text !== update.text)) changed.push(row);
+    }
+    for (const [row, update] of updates) Object.assign(row, update, { negated: false });
+    return changed;
+  };
+
   R.pduText = (row) => {
     switch (row.kind) {
       case 'root': return row.children && row.message ? bytesHex(R.encode(row.children)) : '';

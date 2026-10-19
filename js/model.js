@@ -149,6 +149,7 @@
     const nrc = enumRow('Negative Response Code', NRC, 8, NRC.conditionsNotCorrect);
     const nrc2 = enumRow('Negative Response Code', NRC, 8, NRC.conditionsNotCorrect);
     const reqSid = enumRow('Request Service Identifier', SIDS, 8, reqSidRow.raw);
+    reqSid.fixedPdu = true;
     return [
       root(`${serviceName} Negative Response`, 'neg', [
         constRow('Negative Response Service Identifier', 0x7f, 8),
