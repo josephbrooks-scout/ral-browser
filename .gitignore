@@ -3,5 +3,7 @@ dist/
 # RAL data stays local; users open their own files in the browser
 data/
 *.ral
+*.arxml
+*.7z
 .DS_Store
 node_modules/

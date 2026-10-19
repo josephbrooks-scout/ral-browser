@@ -16,16 +16,16 @@ You can also open `index.html` directly in a browser and use **File ▸ Open** (
 npm run build
 ```
 
-This writes `dist/RAL-Browser.html`, a single self-contained file (about 190 KB) with all CSS, JS and fonts inlined.
+This writes `dist/RAL-Browser.html`, a single self-contained file (about 220 KB) with all CSS, JS and fonts inlined.
 Send just that file: the recipient double-clicks it to open it in Chrome, Edge, Safari or Firefox, then opens a
-`.ral`/`.yaml` file with **Open** or drag & drop. Nothing is installed or uploaded; the RAL file is parsed
+`.ral`/`.yaml`/`.arxml` file with **Open** or drag & drop. Nothing is installed or uploaded; the file is parsed
 locally in the browser. In this build, Reload re-reads the currently opened file instead of `data/tsg_bfs.yaml`.
 Rerun `npm run build` after changing any source file.
 
 ## Hosting (GitHub Pages)
 
 `.github/workflows/pages.yml` builds the single-file app on every push to `main` and publishes `dist/` to
-GitHub Pages. Only the app is published: `data/` and `*.ral` are git-ignored, and RAL files opened in the
+GitHub Pages. Only the app is published: `data/`, `*.ral`, `*.arxml` and `*.7z` are git-ignored, and files opened in the
 browser are parsed locally and never uploaded.
 
 One-time setup: create the repo in the company org (private or internal), push, then go to
@@ -38,6 +38,39 @@ One unified top bar contains menus, toolbar actions, search and the ECU indicato
 Controls wrap on narrow windows rather than being clipped. There is no footer
 status bar: feedback appears in a floating notification. All notifications, including errors
 and warnings, disappear after four seconds.
+
+## ARXML explorer
+
+Open a single `.arxml` / AUTOSAR `.xml` file with **Open**, or drag it into the page.
+For `.7z` archives, extract the archive first and open the `.arxml` inside; archives and
+Markdown validation reports are not ARXML documents. Processing stays entirely in the browser.
+
+ARXML opens in a separate, read-only explorer, not as synthesized UDS services:
+
+- **Overview** provides category cards with object counts: Networks & ECUs, Signals & Signal Groups,
+  PDUs & Frames, Data Types, Software & Interfaces, Scaling/Units/Constraints, and other definitions.
+  Only categories present in the file are shown. **Categories** is the default navigation grouping;
+  **Packages** preserves the original hierarchy and **Object types** lists the raw AUTOSAR types.
+  Use the arrow next to an object, or **Browse all children**, to descend; **Up** and **Home**
+  navigate back through the hierarchy.
+- The shared search box matches full AUTOSAR paths and object types across the entire file.
+- Select an object to see readable property labels alongside original XML paths and attributes.
+  Child-object shortcuts and **Referenced by** links expose relationships in both directions.
+  Reference links navigate to named objects in the same file; **Back** returns.
+  References to objects absent from the file are explicitly marked “not in this file.”
+- Large lists and property tables are paged in batches of 200. **Show more** reveals the next batch.
+  Child shortcuts show the first 20 (with all available in navigation); referring objects page by 20.
+- **Reload** reparses the current ARXML. Opening a RAL file restores the original diagnostic view.
+
+The explorer checks XML well-formedness and the AUTOSAR root/namespace, but does **not**
+perform XSD/schema validation or establish ECU/UDS behavior. DTD/entity declarations and
+duplicate named-object paths are rejected. Cross-file ARXML reference resolution is not yet supported.
+
+Validation: `npm test` runs RAL regressions. To run the browser-specific ARXML tests, serve the app,
+load `tests/arxml.browser.js` into the app page, and call `runArxmlTests()` in that page's console.
+These use synthetic XML and require no diagnostic data.
+
+## RAL diagnostic view
 
 - **Location**: the loaded file, its ECUs (B) and variants (E). Selecting one shows an ECU summary.
 - **Services**: UDS services derived from the RAL data:

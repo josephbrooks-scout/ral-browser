@@ -27,20 +27,20 @@
     <nav class="menubar" id="menubar">
       <div class="menu">File
         <div class="menu-pop">
-          <div class="mi" data-cmd="open">Open RAL file…<span class="acc">Ctrl+O</span></div>
+          <div class="mi" data-cmd="open">Open RAL / ARXML…<span class="acc">Ctrl+O</span></div>
           <div class="mi" data-cmd="reload">Reload default file</div>
           <div class="sep"></div>
           <div class="mi" data-cmd="copy-req">Copy request PDU</div>
         </div>
       </div>
-      <div class="menu">Results
+      <div class="menu ral-only">Results
         <div class="menu-pop">
           <div class="mi" data-cmd="reset">Reset values of current service</div>
           <div class="mi" data-cmd="reset-all">Reset all values</div>
           <div class="mi" data-cmd="uncheck">Clear all check marks</div>
         </div>
       </div>
-      <div class="menu">View
+      <div class="menu ral-only">View
         <div class="menu-pop">
           <div class="mi" data-cmd="ln">Long names<span class="acc" id="ln-check">✓</span></div>
           <div class="mi" data-cmd="expand">Expand all</div>
@@ -56,16 +56,16 @@
     </nav>
     <div class="toolbar">
     <div class="tgroup">
-      <button class="tb primary" data-cmd="open" title="Open RAL file (Ctrl+O)"><svg class="i"><use href="#i-open"/></svg><span>Open</span></button>
+      <button class="tb primary" data-cmd="open" title="Open RAL or ARXML (Ctrl+O)"><svg class="i"><use href="#i-open"/></svg><span>Open</span></button>
       <button class="tb" data-cmd="reload" title="Reload default file"><svg class="i"><use href="#i-reload"/></svg></button>
     </div>
-    <div class="tgroup">
+    <div class="tgroup ral-only">
       <button class="tb on" data-cmd="ln" id="tb-ln" title="Toggle long / short names"><svg class="i"><use href="#i-names"/></svg><span>Long names</span></button>
       <button class="tb" data-cmd="expand" title="Expand all"><svg class="i"><use href="#i-expand"/></svg></button>
       <button class="tb" data-cmd="collapse" title="Collapse all"><svg class="i"><use href="#i-collapse"/></svg></button>
       <button class="tb on" data-cmd="toggle-info" id="tb-info" title="Toggle details pane"><svg class="i"><use href="#i-panel"/></svg></button>
     </div>
-    <div class="tgroup">
+    <div class="tgroup ral-only">
       <button class="tb" data-cmd="reset" title="Reset values of current service"><svg class="i"><use href="#i-reset"/></svg></button>
       <button class="tb" data-cmd="copy-req" title="Copy request PDU"><svg class="i"><use href="#i-copy"/></svg><span>Copy PDU</span></button>
     </div>
@@ -115,16 +115,40 @@
       </div>
     </section>
   </div>
+  <section id="arxml-view" hidden>
+    <div id="arxml-summary" class="card"></div>
+    <div class="arxml-layout">
+      <aside class="card arxml-navigation">
+        <div class="arxml-tools">
+          <select id="arxml-mode" aria-label="ARXML navigation mode">
+            <option value="categories">Categories</option>
+            <option value="packages">Packages</option>
+            <option value="types">Object types</option>
+          </select>
+          <button id="arxml-home">Home</button>
+          <button id="arxml-up" disabled>Up</button>
+        </div>
+        <div id="arxml-breadcrumb"></div>
+        <div id="arxml-tree"></div>
+        <div id="arxml-count"></div>
+      </aside>
+      <section class="card arxml-detail">
+        <div class="arxml-tools"><button id="arxml-overview">Overview</button><button id="arxml-back" disabled>Back</button><strong id="arxml-selected">Object properties</strong></div>
+        <div id="arxml-properties"></div>
+      </section>
+    </div>
+  </section>
 </div>
 <div id="status-msg" role="status" aria-live="polite" hidden></div>
 <div id="modal-root"></div>
-<div id="drop-hint"><div>Drop a RAL file and any companion files to open them</div></div>
-<input type="file" id="file-input" accept=".yaml,.yml,.ral,.txt" multiple hidden>
+<div id="drop-hint"><div>Drop an ARXML file, or a RAL file and its companions</div></div>
+<input type="file" id="file-input" accept=".yaml,.yml,.ral,.txt,.arxml,.xml,.7z" multiple hidden>
 
 <script src="vendor/js-yaml.min.js"></script>
 <script src="js/codec.js"></script>
 <script src="js/model.js"></script>
 <script src="js/loader.js"></script>
+<script src="js/arxml.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

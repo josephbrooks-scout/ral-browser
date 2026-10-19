@@ -39,6 +39,42 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--warm-50); }
 #app { display: flex; flex-direction: column; height: 100%; }
+[hidden] { display: none !important; }
+.arxml-active .ral-only, .arxml-active [data-cmd="copy-req"] { display: none; }
+#arxml-view { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 12px; }
+#arxml-summary { padding: 10px 14px; flex: none; overflow-wrap: anywhere; }
+.arxml-layout { display: flex; flex: 1; gap: 12px; min-height: 0; }
+.arxml-navigation { width: 38%; min-width: 240px; display: flex; flex-direction: column; }
+.arxml-detail { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.arxml-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 12px; border-bottom: 1px solid var(--line); }
+.arxml-tools strong { overflow-wrap: anywhere; min-width: 0; }
+#arxml-view button, #arxml-view select { font: inherit; border: 1px solid var(--line); background: var(--white); border-radius: 6px; padding: 5px 9px; cursor: pointer; }
+#arxml-view button:hover { background: var(--scout-orange-50); }
+#arxml-view button:disabled { cursor: default; opacity: .5; }
+#arxml-breadcrumb, #arxml-count { padding: 8px 12px; color: var(--stone); overflow-wrap: anywhere; }
+#arxml-tree, #arxml-properties { flex: 1; min-height: 0; overflow: auto; padding: 8px; }
+.arxml-tree-row { display: flex; align-items: center; gap: 6px; padding: 4px; border-radius: 6px; }
+.arxml-tree-row.selected { background: var(--scout-orange-50); }
+#arxml-view .arxml-object { flex: 1; min-width: 0; text-align: left; overflow-wrap: anywhere; border: none; }
+.arxml-type { color: var(--stone); font-size: 10px; max-width: 35%; overflow-wrap: anywhere; }
+#arxml-properties table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+#arxml-properties th, #arxml-properties td { padding: 8px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+#arxml-properties th:first-child { width: 42%; }
+#arxml-properties td { font-family: var(--mono); font-size: 11px; }
+#arxml-properties td button { max-width: 100%; text-align: left; overflow-wrap: anywhere; color: var(--scout-orange-700); }
+.arxml-unresolved { color: var(--stone); }
+.arxml-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0; }
+#arxml-view .arxml-overview button { text-align: left; white-space: pre-line; padding: 18px; line-height: 1.8; border-left: 3px solid var(--scout-orange); }
+.arxml-property-path { display: block; color: var(--stone); margin-top: 5px; font-size: 10px; }
+.arxml-related { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 12px; }
+#arxml-view .arxml-related button { text-align: left; max-width: 100%; overflow-wrap: anywhere; }
+#arxml-properties { padding: 16px; }
+@media (max-width: 720px) {
+  .arxml-layout { flex-direction: column; }
+  .arxml-navigation { width: 100%; min-width: 0; height: 40%; min-height: 150px; }
+  .arxml-detail { min-height: 0; }
+  #arxml-summary { max-height: 20vh; overflow: auto; }
+}
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--scout-orange); outline-offset: 1px; }
 .i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }

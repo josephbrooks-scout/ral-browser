@@ -38,6 +38,9 @@
         Array.isArray(doc.ecus) || !Object.keys(doc.ecus).length) {
       return msg('Not a RAL file: expected a non-empty top-level "ecus" mapping', true);
     }
+    clearTimeout(filterTimer);
+    R.closeArxml();
+    state.arxmlSource = null;
     Object.assign(state, { doc, file: name, text, sources, ecus: Object.keys(doc.ecus), selKey: null, svc: null, selRow: null });
     state.cache.clear();
     state.routineOperations.clear();
@@ -57,7 +60,7 @@
     if (window.RAL_STANDALONE) {
       if (state.text) return loadText(state.text, state.file, state.sources);
       renderAll();
-      msg('Open a RAL file: File ▸ Open, the Open button, or drag & drop a .ral / .yaml file onto this window.');
+      msg('Open a RAL or ARXML file using Open, or drag it onto this window.');
       return;
     }
     try {
@@ -73,6 +76,15 @@
   async function loadFiles(files) {
     if (!files.length) return;
     try {
+      if (files.some((file) => /\.7z$/i.test(file.name))) {
+        throw new Error('Extract the .7z archive first, then open the .arxml file inside it. Archives are not opened directly.');
+      }
+      if (files.some((file) => /\.(arxml|xml)$/i.test(file.name))) {
+        if (files.length !== 1) throw new Error('Open one ARXML file at a time, separately from RAL files.');
+        const file = files[0];
+        openArxml(await file.text(), file.name);
+        return;
+      }
       const sources = new Map();
       for (const file of files) {
         if (sources.has(file.name)) throw new Error(`Duplicate filename "${file.name}". Select files with unique names.`);
@@ -81,8 +93,16 @@
       const name = R.ralRootName(sources);
       loadText(sources.get(name), name, sources);
     } catch (e) {
-      msg(`Could not open RAL files: ${e.message}`, true);
+      msg(`Could not open files: ${e.message}`, true);
     }
+  }
+
+  function openArxml(text, name) {
+    const parsed = R.parseArxml(text);
+    clearTimeout(filterTimer);
+    R.showArxml(parsed, name);
+    state.arxmlSource = { text, name };
+    msg(`Loaded ${name}: ${parsed.records.length.toLocaleString()} AUTOSAR objects. XSD validation not performed.`);
   }
 
   function selectEcu(name) {
@@ -122,7 +142,7 @@
     treeEl.innerHTML = '';
     state.visible = [];
     if (!nodes.length) {
-      treeEl.innerHTML = `<div class="empty">${state.doc ? 'Nothing here.' : 'Open a RAL YAML file via File ▸ Open, or drag & drop it here.'}</div>`;
+      treeEl.innerHTML = `<div class="empty">${state.doc ? 'Nothing here.' : 'Open a RAL or ARXML file via File ▸ Open, or drag & drop it here.'}</div>`;
       return;
     }
     const memo = new Map();
@@ -429,7 +449,11 @@
 
   const commands = {
     open: () => $('file-input').click(),
-    reload: loadDefault,
+    reload: () => {
+      if (!state.arxmlSource) return loadDefault();
+      try { openArxml(state.arxmlSource.text, state.arxmlSource.name); }
+      catch (e) { msg(`Could not reload ARXML: ${e.message}`, true); }
+    },
     'copy-req': async () => {
       const r = state.svc && state.svc.request && state.svc.request[0];
       if (!r) return msg('No request PDU for the current selection', true);
@@ -507,7 +531,10 @@
   let filterTimer;
   $('filter').addEventListener('input', (e) => {
     clearTimeout(filterTimer);
-    filterTimer = setTimeout(() => { state.filter = e.target.value; renderTree(); }, 120);
+    filterTimer = setTimeout(() => {
+      if (state.arxmlSource) return R.filterArxml(e.target.value);
+      state.filter = e.target.value; renderTree();
+    }, 120);
   });
 
   $('file-input').addEventListener('change', (e) => { loadFiles([...e.target.files]); e.target.value = ''; });
