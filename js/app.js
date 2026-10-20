@@ -291,6 +291,10 @@
     if (state.pduChanges.has(row)) el.classList.add('pdu-changed');
     el.dataset.idx = idx;
     const hasKids = row.children && row.children.length;
+    const bitfield = row.bits > 0 && row.bits % 8 !== 0 &&
+      ['enum', 'num', 'reserved', 'const', 'match'].includes(row.kind);
+    if (bitfield) el.classList.add('bitfield-row');
+    const encodedType = row.signed || row.src?.signed ? 'INT' : 'UINT';
     const val = R.valueText(row);
     const valCls = ['c', 'val'];
     if (row.kind === 'const' || row.kind === 'reserved') valCls.push('grey');
@@ -302,7 +306,9 @@
       `<span class="exp${hasKids && row.open ? ' open' : ''}">${hasKids ? '❯' : ''}</span>` +
       `<span class="cb${row.checked ? ' on' : ''}"></span><span class="ico ${row.icon}"></span><span>${esc(row.name)}</span></div>` +
       `<div class="c" title="${esc(row.paramType)}">${esc(row.paramType)}</div>` +
-      `<div class="c">${esc(row.dataType)}</div>` +
+      `<div class="c datatype" title="${bitfield ? `${row.bits}-bit ${encodedType === 'INT' ? 'signed' : 'unsigned'} packed numeric field; text choices are enum labels, not encoded strings.` : esc(row.dataType)}">${bitfield
+        ? `<span class="bitfield-label">BITFIELD</span><small class="bitfield-storage">${encodedType}</small>`
+        : esc(row.dataType)}</div>` +
       `<div class="c bits" title="${row.bits > 0 ? `${row.bits} encoded bits` : ''}">${row.bits > 0 ? esc(row.bits) : ''}</div>` +
       `<div class="${valCls.join(' ')}" title="${esc(val)}">${esc(val)}${dd}</div>` +
       `<div class="c pdu" title="${esc(R.pduText(row))}">${row.kind === 'root' && row.message

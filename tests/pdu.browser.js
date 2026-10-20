@@ -55,5 +55,32 @@ window.runPduTests = () => {
   R.app.commands.reset();
   check(R.pduText(R.app.state.svc.responses[0]) === '62 01 2F 00', 'Reset restores original message');
   check(document.querySelectorAll('.pdu-changed').length === 0, 'Reset clears highlights');
+  R.app.loadText(`ecus:
+  demo:
+    diagnostics:
+      dids:
+        coding:
+          id: 0x0600
+          WDBI: {}
+          RDBI: {}
+          values:
+            - {name: Flag, type: uint, bit_length: 1, enum: {Off: 0, On: 1}}
+            - {name: Mode, type: uint, bit_length: 3, enum: {Init: 0, Active: 5}}
+            - {name: Signed, type: sint, bit_length: 12, enum: {Zero: 0, Negative: -1}}
+            - {name: Byte, type: uint, bit_length: 8, enum: {Init: 0}}
+`, 'coding.yaml');
+  const coding = R.app.state.model.services.find((item) => item.label.startsWith('0x2E')).children[0];
+  R.app.selectNode(coding);
+  const findRow = (name) => [...document.querySelectorAll('#grid-req .gr')].find((row) =>
+    row.querySelector('.name')?.textContent.trim() === name);
+  for (const [name, bits, type] of [['Flag', '1', 'UINT'], ['Mode', '3', 'UINT'], ['Signed', '12', 'INT']]) {
+    const row = findRow(name);
+    check(row.querySelector('.bitfield-label')?.textContent === 'BITFIELD' &&
+      row.querySelector('.bitfield-storage')?.textContent === type &&
+      row.querySelector('.bits').textContent === bits, `${name} identifies bitfield width and numeric representation`);
+    check(!!row.querySelector('.dd'), `${name} retains dropdown`);
+  }
+  check(findRow('Byte').querySelector('.datatype').textContent === 'UINT', 'Whole-byte enum remains UINT');
+  check(R.pduText(R.app.state.svc.request[0]) === '2E 06 00 00 00 00', 'Presentation preserves bit packing');
   return { assertions, passed: true };
 };

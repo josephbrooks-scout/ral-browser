@@ -227,6 +227,11 @@ button { font: inherit; color: inherit; }
 .gr .c.bits, .gr .c.val, .gr .c.pdu, .gr .c.scaling { font-family: var(--mono); font-size: 12px; }
 .gr .c.pdu { color: var(--navy-600); }
 .gr .c.name { display: flex; align-items: center; padding-left: 4px; }
+.gr.bitfield-row { height: auto; min-height: 42px; }
+.gr.bitfield-row .c { min-height: 42px; }
+.gr .c.datatype:has(.bitfield-label) { line-height: 18px; padding-top: 3px; }
+.bitfield-label { color: var(--navy); font-size: 10px; font-weight: 600; letter-spacing: .03em; }
+.bitfield-storage { display: block; color: var(--stone); font: 10px/15px var(--mono); }
 
 /* root rows (messages / groups) */
 .gr:has(.ico.req, .ico.pos, .ico.neg, .ico.neg-gen, .ico.grp) .c { background: var(--warm-50); border-bottom-color: var(--line); font-weight: 600; color: var(--navy); }

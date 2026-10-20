@@ -135,6 +135,10 @@ these use a synthetic RAL fixture and replace the currently displayed data.
   not `STRING`: labels describe numeric encoded choices. Bit length shows each leaf field's declared
   encoded width, including reserved fields; containers have no aggregate width shown.
   True ASCII strings remain `ASCIISTRING`, and hex byte fields remain `BYTEFIELD`.
+  Numeric fields whose width is not a whole number of bytes (for example 1, 3, or 12 bits)
+  are presented as **BITFIELD**, with their underlying `UINT` / `INT` beneath it and an
+  explanatory tooltip. Byte-sized numeric fields retain their normal datatype label.
+  This presentation does not change packing, enum choices, or hex decoding.
   Existing saved column widths are preserved with the new bit-length column inserted.
   Responses include the positive response, the service negative response and the generic "UDS on CAN" negative response.
 - **Details**: ID, sessions, security levels, request PDU and the description text.
