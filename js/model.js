@@ -56,7 +56,7 @@
     P(name, Object.assign({ kind: 'match', paramType: 'MATCHING-REQUEST-PARAM', dataType: 'UINT', bits: src.bits, src }, extra));
   const enumRow = (name, map, bits, def) => {
     const enumList = toEnumList(map);
-    return P(name, { kind: 'enum', paramType: 'TEXTTABLE', dataType: 'STRING', bits, enumList, raw: big(def ?? enumList[0].value), icon: 'param enum' });
+    return P(name, { kind: 'enum', paramType: 'TEXTTABLE', dataType: 'UINT', bits, enumList, raw: big(def ?? enumList[0].value), icon: 'param enum' });
   };
   const infoRow = (name, value, paramType = 'PROPERTY') =>
     P(name, {
@@ -132,8 +132,8 @@
       const text = asciiDefault(f.default, bits);
       return P(f.name, { ...base, kind: 'string', paramType: 'IDENTICAL', dataType: 'ASCIISTRING', text, scaling: f.user_codec || 'ascii' });
     }
-    if (/^reserved/i.test(f.name) && !enumList) return P(f.name, { ...base, kind: 'reserved', paramType: 'RESERVED', raw: 0n });
-    if (enumList && !numeric) return P(f.name, { ...base, kind: 'enum', paramType: 'TEXTTABLE', dataType: 'STRING', icon: 'param enum' });
+    if (/^reserved/i.test(f.name) && !enumList) return P(f.name, { ...base, kind: 'reserved', paramType: 'RESERVED', dataType: signed ? 'INT' : 'UINT', raw: 0n });
+    if (enumList && !numeric) return P(f.name, { ...base, kind: 'enum', paramType: 'TEXTTABLE', dataType: signed ? 'INT' : 'UINT', icon: 'param enum' });
     if (!enumList && !numeric && bits > 32) return P(f.name, { ...base, kind: 'bytes', paramType: 'IDENTICAL', dataType: 'BYTEFIELD' });
     const linear = scale !== 1 || offset !== 0;
     return P(f.name, {

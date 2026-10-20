@@ -27,7 +27,7 @@
   --font: "Scout Sans", "scout-sans-regular", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  --cols: 320px 190px 100px 260px 150px 70px 170px;
+  --cols: 320px 190px 100px 90px 260px 150px 70px 170px;
   --row-h: 28px;
   --radius: 12px;
   --shadow: 0 1px 2px rgba(17, 35, 47, .06), 0 4px 16px rgba(17, 35, 47, .04);
@@ -224,17 +224,18 @@ button { font: inherit; color: inherit; }
 .gr.sel .c { background: var(--scout-orange-50); }
 .gr.sel .c.name { box-shadow: inset 3px 0 0 var(--scout-orange); }
 .gr .c:nth-child(2), .gr .c:nth-child(3) { color: var(--stone); font-size: 12px; }
-.gr .c:nth-child(4), .gr .c:nth-child(5), .gr .c:nth-child(7) { font-family: var(--mono); font-size: 12px; }
-.gr .c:nth-child(5) { color: var(--navy-600); }
+.gr .c.bits, .gr .c.val, .gr .c.pdu, .gr .c.scaling { font-family: var(--mono); font-size: 12px; }
+.gr .c.pdu { color: var(--navy-600); }
 .gr .c.name { display: flex; align-items: center; padding-left: 4px; }
 
 /* root rows (messages / groups) */
 .gr:has(.ico.req, .ico.pos, .ico.neg, .ico.neg-gen, .ico.grp) .c { background: var(--warm-50); border-bottom-color: var(--line); font-weight: 600; color: var(--navy); }
-.gr:has(.ico.req, .ico.pos, .ico.neg, .ico.neg-gen, .ico.grp) .c:nth-child(5) { color: var(--scout-orange-700); }
+.gr:has(.ico.req, .ico.pos, .ico.neg, .ico.neg-gen, .ico.grp) .c.pdu { color: var(--scout-orange-700); }
 .gr.sel:has(.ico.req, .ico.pos, .ico.neg, .ico.neg-gen, .ico.grp) .c { background: var(--scout-orange-50); }
-.gr:has(.ico.req, .ico.pos, .ico.neg, .ico.neg-gen, .ico.grp) .c.name { grid-column: span 3; }
+.gr:has(.ico.req, .ico.pos, .ico.neg, .ico.neg-gen, .ico.grp) .c.name { grid-column: span 4; }
 .gr:has(.ico.req, .ico.pos, .ico.neg, .ico.neg-gen, .ico.grp) .c:nth-child(2),
-.gr:has(.ico.req, .ico.pos, .ico.neg, .ico.neg-gen, .ico.grp) .c:nth-child(3) { display: none; }
+.gr:has(.ico.req, .ico.pos, .ico.neg, .ico.neg-gen, .ico.grp) .c:nth-child(3),
+.gr:has(.ico.req, .ico.pos, .ico.neg, .ico.neg-gen, .ico.grp) .c.bits { display: none; }
 
 .gr .exp { width: 16px; flex: none; text-align: center; color: var(--stone-400); font-size: 9px; cursor: pointer; transition: transform .15s; }
 .gr .exp.open { transform: rotate(90deg); }

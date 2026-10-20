@@ -31,6 +31,50 @@ ecus:
 const companion = 'dtc_definitions:\n  demo:\n    domain: body\n    metadata: {code: 0x123456}\n';
 const bundle = () => new Map([['fixture.ral', main], ['fixture.diag.ral', companion]]);
 
+test('enum datatypes and bit lengths describe encoded fields without changing labels or packing', () => {
+  const doc = R.parseRal(`ecus:
+  demo:
+    diagnostics:
+      dids:
+        coding:
+          id: 0x0600
+          RDBI: {}
+          WDBI: {}
+          values:
+            - {name: flag, type: uint, bit_length: 1, enum: {Off: 0, On: 1}}
+            - {name: mode, type: uint, bit_length: 3, enum: {Init: 0, Active: 5}}
+            - {name: signed_choice, type: sint, bit_length: 4, enum: {Zero: 0, Negative: -1}}
+            - {name: reserved_bits, type: uint, bit_length: 8}
+            - {name: text, type: string, bit_length: 8, default: A}
+            - {name: bytes, type: string, user_codec: hexstring, bit_length: 8, default: 1}
+`, 'coding.yaml');
+  const model = R.buildEcu('demo', doc.ecus.demo);
+  const service = model.services.find((node) => node.label.startsWith('0x2E')).children[0].build();
+  const fields = [];
+  const walk = (rows) => rows.forEach((row) => { fields.push(row); if (row.children) walk(row.children); });
+  walk(service.request);
+  for (const [name, type, bits] of [
+    ['flag', 'UINT', 1], ['mode', 'UINT', 3], ['signed_choice', 'INT', 4],
+    ['reserved_bits', 'UINT', 8], ['text', 'ASCIISTRING', 8], ['bytes', 'BYTEFIELD', 8],
+  ]) {
+    const row = fields.find((item) => item.name === name);
+    assert.equal(row.dataType, type);
+    assert.equal(row.bits, bits);
+  }
+  const flag = fields.find((row) => row.name === 'flag');
+  const mode = fields.find((row) => row.name === 'mode');
+  const signed = fields.find((row) => row.name === 'signed_choice');
+  flag.raw = 1n; mode.raw = 5n; signed.raw = -1n;
+  assert.equal(R.valueText(flag), 'On');
+  assert.equal(R.valueText(mode), 'Active');
+  assert.equal(R.valueText(signed), 'Negative');
+  assert.equal(R.pduText(service.request[0]), '2E 06 00 DF 00 41 01');
+  const nrc = service.responses.find((row) => row.icon === 'neg')?.children.find((row) => row.kind === 'enum');
+  assert.ok(nrc);
+  assert.equal(nrc.dataType, 'UINT');
+  assert.equal(nrc.bits, 8);
+});
+
 test('selects the main file regardless of selection order and resolves include/ref', () => {
   const sources = new Map([...bundle()].reverse());
   assert.equal(R.ralRootName(sources), 'fixture.ral');

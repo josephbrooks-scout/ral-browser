@@ -130,7 +130,13 @@ these use a synthetic RAL fixture and replace the currently displayed data.
     operation in the Request pane dropdown). Edits are preserved separately for each operation;
     Reset values resets only the selected operation.
 - **Sub Components**: Monitors (with linked DTC) and DTCs grouped by domain.
-- **Request / Responses**: parameter grid with Name, ParamType, DataType, Value, PDU, Unit and Scaling columns. Responses include the positive response, the service negative response and the generic "UDS on CAN" negative response.
+- **Request / Responses**: parameter grid with Name, ParamType, DataType, Bit length, Value, PDU, Unit and Scaling columns.
+  Enum fields keep `TEXTTABLE` and readable dropdown labels, but their datatype is `UINT` or `INT`,
+  not `STRING`: labels describe numeric encoded choices. Bit length shows each leaf field's declared
+  encoded width, including reserved fields; containers have no aggregate width shown.
+  True ASCII strings remain `ASCIISTRING`, and hex byte fields remain `BYTEFIELD`.
+  Existing saved column widths are preserved with the new bit-length column inserted.
+  Responses include the positive response, the service negative response and the generic "UDS on CAN" negative response.
 - **Details**: ID, sessions, security levels, request PDU and the description text.
 
 ## Editing values
@@ -150,7 +156,7 @@ these use a synthetic RAL fixture and replace the currently displayed data.
 
 | RAL field | ParamType | DataType |
 |---|---|---|
-| `enum` only | TEXTTABLE | STRING |
+| `enum` only | TEXTTABLE | UINT / INT |
 | `scale`/`offset` ≠ 1/0 | LINEAR | FLOAT / INT / UINT |
 | `min`/`max`/`unit` | IDENTICAL | UINT |
 | `type: string` | IDENTICAL | ASCIISTRING |

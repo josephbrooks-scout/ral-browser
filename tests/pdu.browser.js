@@ -18,6 +18,16 @@ window.runPduTests = () => {
 `, 'demo.yaml');
   const node = R.app.state.model.services.find((item) => item.label.startsWith('0x22')).children[0];
   R.app.selectNode(node);
+  check([...document.querySelectorAll('#grid-resp .gh .c')].some((cell) => cell.textContent === 'Bit length'), 'Shows bit-length header');
+  const stateRow = [...document.querySelectorAll('#grid-resp .gr')].find((row) =>
+    row.querySelector('.name')?.textContent.trim() === 'State');
+  check(stateRow.children[2].textContent === 'UINT' && stateRow.querySelector('.bits').textContent === '8', 'Enum shows numeric datatype and encoded width');
+  check(stateRow.querySelector('.dd') && stateRow.querySelector('.val').textContent.includes('Init'), 'Retains enum label and dropdown');
+  const rootRow = document.querySelector('#grid-resp .gr');
+  check(getComputedStyle(rootRow.querySelector('.name')).gridColumnStart === 'span 4' &&
+    getComputedStyle(rootRow.querySelector('.bits')).display === 'none' &&
+    rootRow.querySelector('.pdu').getBoundingClientRect().x === document.querySelector('#grid-resp .gh').children[5].getBoundingClientRect().x,
+  'Message heading spans metadata columns without shifting PDU');
   const apply = (index, hex) => {
     document.querySelectorAll('#grid-resp .pdu-edit')[index].click();
     document.getElementById('pdu-input').value = hex;

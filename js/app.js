@@ -2,7 +2,7 @@
 (function () {
   const R = window.RAL;
   const DEFAULT_RAL = 'data/tsg_bfs.yaml';
-  const COLS = ['Name', 'ParamType', 'DataType', 'Value', 'PDU', 'Unit', 'Scaling'];
+  const COLS = ['Name', 'ParamType', 'DataType', 'Bit length', 'Value', 'PDU', 'Unit', 'Scaling'];
   const LAYOUT_KEY = 'ralBrowser.layout.v2';
 
   const $ = (id) => document.getElementById(id);
@@ -15,7 +15,7 @@
     longNames: true, showInfo: true, cache: new Map(), index: new Map(), visible: [],
     routineOperations: new Map(),
     pduChanges: new Map(),
-    cols: [320, 190, 100, 260, 150, 70, 170], selRow: null,
+    cols: [320, 190, 100, 90, 260, 150, 70, 170], selRow: null,
   };
 
   /* ---------- status ---------- */
@@ -303,12 +303,13 @@
       `<span class="cb${row.checked ? ' on' : ''}"></span><span class="ico ${row.icon}"></span><span>${esc(row.name)}</span></div>` +
       `<div class="c" title="${esc(row.paramType)}">${esc(row.paramType)}</div>` +
       `<div class="c">${esc(row.dataType)}</div>` +
+      `<div class="c bits" title="${row.bits > 0 ? `${row.bits} encoded bits` : ''}">${row.bits > 0 ? esc(row.bits) : ''}</div>` +
       `<div class="${valCls.join(' ')}" title="${esc(val)}">${esc(val)}${dd}</div>` +
       `<div class="c pdu" title="${esc(R.pduText(row))}">${row.kind === 'root' && row.message
         ? `<button class="pdu-edit" title="Edit full message hex and decode fields">${esc(R.pduText(row)) || 'Edit hex'}</button>`
         : esc(R.pduText(row))}</div>` +
       `<div class="c">${esc(row.unit)}</div>` +
-      `<div class="c" title="${esc(row.scaling)}">${esc(row.scaling)}</div>`;
+      `<div class="c scaling" title="${esc(row.scaling)}">${esc(row.scaling)}</div>`;
     const change = state.pduChanges.get(row);
     if (change) {
       const valueCell = el.querySelector('.val');
@@ -681,7 +682,11 @@
   try {
     const l = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null');
     if (l) {
-      if (Array.isArray(l.cols) && l.cols.length === COLS.length) state.cols = l.cols;
+      if (Array.isArray(l.cols) && [COLS.length, COLS.length - 1].includes(l.cols.length) &&
+          l.cols.every((width) => Number.isFinite(width) && width >= 30)) {
+        state.cols = [...l.cols];
+        if (state.cols.length === COLS.length - 1) state.cols.splice(3, 0, 90);
+      }
       if (l.left) $('left').style.width = `${l.left}px`;
       if (l.req) $('pane-req').style.height = `${l.req}px`;
       if (l.info) $('pane-info').style.height = `${l.info}px`;
