@@ -1,6 +1,7 @@
 # RAL Browser
 
-An ODX-Browser-style viewer for RAL diagnostic YAML files (`ecus → <ecu> → diagnostics → routine_controls / dids / dtcs / monitors`).
+An ODX-Browser-style viewer for RAL diagnostic YAML, with a read-only AUTOSAR ARXML workspace,
+communication relationship explorer, and file comparison.
 
 ## Run
 
@@ -8,7 +9,7 @@ An ODX-Browser-style viewer for RAL diagnostic YAML files (`ecus → <ecu> → d
 npm start            # serves on http://localhost:8080 and auto-loads data/tsg_bfs.yaml
 ```
 
-You can also open `index.html` directly in a browser and use **File ▸ Open** (Ctrl/Cmd+O) or drag & drop a RAL file. Everything runs locally. No data leaves the machine.
+You can also open `index.html` directly in a browser and use **File ▸ Open** (Ctrl/Cmd+O) or drag & drop RAL or ARXML files. Everything runs locally. No data leaves the machine.
 
 ## Sharing (single-file build)
 
@@ -16,7 +17,7 @@ You can also open `index.html` directly in a browser and use **File ▸ Open** (
 npm run build
 ```
 
-This writes `dist/RAL-Browser.html`, a single self-contained file (about 220 KB) with all CSS, JS and fonts inlined.
+This writes `dist/RAL-Browser.html`, a single self-contained file (about 255 KB) with all CSS, JS and fonts inlined.
 Send just that file: the recipient double-clicks it to open it in Chrome, Edge, Safari or Firefox, then opens a
 `.ral`/`.yaml`/`.arxml` file with **Open** or drag & drop. Nothing is installed or uploaded; the file is parsed
 locally in the browser. In this build, Reload re-reads the currently opened file instead of `data/tsg_bfs.yaml`.
@@ -41,7 +42,7 @@ and warnings, disappear after four seconds.
 
 ## ARXML explorer
 
-Open a single `.arxml` / AUTOSAR `.xml` file with **Open**, or drag it into the page.
+Open one or more related `.arxml` / AUTOSAR `.xml` files together with **Open**, or drag them into the page.
 For `.7z` archives, extract the archive first and open the `.arxml` inside; archives and
 Markdown validation reports are not ARXML documents. Processing stays entirely in the browser.
 
@@ -53,22 +54,67 @@ ARXML opens in a separate, read-only explorer, not as synthesized UDS services:
   **Packages** preserves the original hierarchy and **Object types** lists the raw AUTOSAR types.
   Use the arrow next to an object, or **Browse all children**, to descend; **Up** and **Home**
   navigate back through the hierarchy.
-- The shared search box matches full AUTOSAR paths and object types across the entire file.
+- The shared search box matches full AUTOSAR paths, object types, and source filenames across the workspace.
 - Select an object to see readable property labels alongside original XML paths and attributes.
   Child-object shortcuts and **Referenced by** links expose relationships in both directions.
-  Reference links navigate to named objects in the same file; **Back** returns.
-  References to objects absent from the file are explicitly marked “not in this file.”
+  Reference links navigate across all loaded ARXML files; **Back** returns.
+  Missing targets, conflicting definitions, mismatched namespaces and mismatched `DEST` types are explicitly marked.
 - Large lists and property tables are paged in batches of 200. **Show more** reveals the next batch.
   Child shortcuts show the first 20 (with all available in navigation); referring objects page by 20.
-- **Reload** reparses the current ARXML. Opening a RAL file restores the original diagnostic view.
+- **Add ARXML files** extends the workspace. **Open** replaces it. Remove individual sources from the
+  overview; at least one file must remain. **Reload** reparses all current workspace sources.
+  Opening a RAL file restores the original diagnostic view. RAL and ARXML cannot be mixed in one import.
+  Loaded files are held in memory only; refreshing or closing the browser page clears them.
+- **Workspace files** lists filenames, object counts, namespace/schema metadata, and declared
+  document-level admin metadata where present. Object-level release/admin data remains in properties.
+  Schema filenames are not interpreted as ECU software releases.
+- Packages sharing a full path are combined. Identical non-package definitions retain all provenance;
+  differing definitions at the same path are flagged as conflicts, with all sources inspectable.
+  No reference to a conflicting path is silently resolved. More complex AUTOSAR split definitions
+  outside packages are not automatically merged. Duplicate filenames must be renamed before adding.
+- **Workspace issues** is a persistent, paged list of conflicting paths and unresolved absolute references.
+
+### Communication
+
+**Communication** groups ECUs, networks/channels, connectors/controllers/ports, frames, PDUs, and signals.
+Select an object to follow explicit containment and references in both directions. Frame/PDU mapping
+children also expose their connected targets, so you can trace through triggerings and mappings rather
+than guessing relationships from names. Links retain their source object, field, and filename.
+
+The detail pane surfaces declared IDs, lengths, start positions, byte order, directions, and transfer
+properties. Mapping tables put the target signal/PDU, start bit, byte order and declared length together.
+For signals it follows available system-signal, COMPU-method, unit, constraint and base-type
+references (up to four hops, cycle-safe). COMPU coefficients remain in their original numerator/denominator
+context; the explorer does not assume a simple linear formula. This is not payload decoding, bus
+simulation, bit-overlap validation, or AUTOSAR variant evaluation. Reference direction is not Tx/Rx direction.
+
+### Compare files
+
+**Compare files** accepts one baseline and one candidate ARXML file, independently of the workspace;
+two revisions can have the same filename. Match objects by full AUTOSAR path and browse **added**,
+**removed**, and **changed** definitions, with unchanged counts and paged before/after property tables.
+Filter differences by status or search by path/type.
+
+Comparison includes types, reference paths, attributes (including UUIDs), local properties, repeated
+values and non-named-child ordering. Nested named objects are compared independently, so their property
+changes do not cascade through all ancestor packages. Renames appear as removed + added. Namespace-prefix
+spelling, XML comments, formatting between elements, and whitespace-only leaf text are ignored;
+other leaf text is compared as declared.
+Document-level metadata/schema information is shown separately from named-object counts. This is a
+structural definition comparison, not a claim of semantic equivalence or ECU compatibility.
+Choosing new comparison files clears the previous report; invalid input is reported explicitly.
 
 The explorer checks XML well-formedness and the AUTOSAR root/namespace, but does **not**
 perform XSD/schema validation or establish ECU/UDS behavior. DTD/entity declarations and
-duplicate named-object paths are rejected. Cross-file ARXML reference resolution is not yet supported.
+duplicate named-object paths within a single source are rejected. There is no physical ECU connection,
+approved ECU release baseline, ARXML editing/export, or new DBC/ODX/CDD format support.
 
 Validation: `npm test` runs RAL regressions. To run the browser-specific ARXML tests, serve the app,
 load `tests/arxml.browser.js` into the app page, and call `runArxmlTests()` in that page's console.
 These use synthetic XML and require no diagnostic data.
+For workspace, communication, and comparison regressions, load `tests/workspace.browser.js` and
+call `await runWorkspaceTests()`. This tests synthetic split packages, cross-file references, conflicts,
+mapping details, comparison, imports, add/remove/reload, and switching back to RAL.
 For full-message hex editing UI regressions, load `tests/pdu.browser.js` and call `runPduTests()`;
 these use a synthetic RAL fixture and replace the currently displayed data.
 

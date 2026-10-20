@@ -32,7 +32,9 @@
   }
 
   /* ---------- loading ---------- */
+  let loadVersion = 0;
   function loadText(text, name, sources = new Map([[name, text]])) {
+    loadVersion++;
     let doc;
     try { doc = R.parseRal(text, name, sources); } catch (e) { return msg(`Could not load ${name}: ${e.message}`, true); }
     if (!doc || typeof doc !== 'object' || !doc.ecus || typeof doc.ecus !== 'object' ||
@@ -77,20 +79,22 @@
 
   async function loadFiles(files) {
     if (!files.length) return;
+    const version = ++loadVersion;
     try {
       if (files.some((file) => /\.7z$/i.test(file.name))) {
         throw new Error('Extract the .7z archive first, then open the .arxml file inside it. Archives are not opened directly.');
       }
       if (files.some((file) => /\.(arxml|xml)$/i.test(file.name))) {
-        if (files.length !== 1) throw new Error('Open one ARXML file at a time, separately from RAL files.');
-        const file = files[0];
-        openArxml(await file.text(), file.name);
+        if (!files.every((file) => /\.(arxml|xml)$/i.test(file.name))) throw new Error('Open ARXML files separately from RAL files.');
+        await loadArxmlFiles(files, false, version);
         return;
       }
       const sources = new Map();
       for (const file of files) {
         if (sources.has(file.name)) throw new Error(`Duplicate filename "${file.name}". Select files with unique names.`);
-        sources.set(file.name, await file.text());
+        const text = await file.text();
+        if (version !== loadVersion) return;
+        sources.set(file.name, text);
       }
       const name = R.ralRootName(sources);
       loadText(sources.get(name), name, sources);
@@ -99,14 +103,42 @@
     }
   }
 
-  function openArxml(text, name) {
-    const parsed = R.parseArxml(text);
+  function openArxml(sources) {
+    const parsed = R.parseArxmlWorkspace(sources);
     clearTimeout(filterTimer);
-    R.showArxml(parsed, name);
-    state.arxmlSource = { text, name };
-    msg(`Loaded ${name}: ${parsed.records.length.toLocaleString()} AUTOSAR objects. XSD validation not performed.`);
+    R.showArxml(parsed, sources.size === 1 ? sources.keys().next().value : `ARXML workspace (${sources.size} files)`);
+    state.arxmlSource = { sources };
+    msg(`Loaded ${sources.size} ARXML file(s): ${parsed.records.length.toLocaleString()} objects; ${parsed.conflicts.length} conflicting paths; ${parsed.missingReferences} unresolved references. XSD validation not performed.`,
+      parsed.conflicts.length > 0 || parsed.missingReferences > 0);
   }
 
+  async function loadArxmlFiles(files, append = false, version = ++loadVersion) {
+    const sources = new Map(append ? state.arxmlSource?.sources : []);
+    for (const file of files) {
+      if (!/\.(arxml|xml)$/i.test(file.name)) throw new Error('Select ARXML / AUTOSAR XML files only.');
+      if (sources.has(file.name)) throw new Error(`"${file.name}" is already selected. Remove it first or rename the file before adding it.`);
+      const text = await file.text();
+      if (version !== loadVersion) return;
+      sources.set(file.name, text);
+    }
+    openArxml(sources);
+  }
+  $('arxml-add').addEventListener('click', () => $('arxml-add-input').click());
+  $('arxml-add-input').addEventListener('change', async (event) => {
+    const files = [...event.target.files];
+    event.target.value = '';
+    if (!files.length) return;
+    try { await loadArxmlFiles(files, true); }
+    catch (error) { msg(`Could not add ARXML files: ${error.message}`, true); }
+  });
+  R.removeArxmlFile = (name) => {
+    loadVersion++;
+    const sources = new Map(state.arxmlSource?.sources);
+    sources.delete(name);
+    if (!sources.size) return msg('Keep at least one file in the workspace, or use Open to load a different file.', true);
+    try { openArxml(sources); }
+    catch (error) { msg(`Could not remove file: ${error.message}`, true); }
+  };
   function selectEcu(name) {
     state.ecu = name;
     state.model = R.buildEcu(name, state.doc.ecus[name]);
@@ -503,8 +535,9 @@
   const commands = {
     open: () => $('file-input').click(),
     reload: () => {
+      loadVersion++;
       if (!state.arxmlSource) return loadDefault();
-      try { openArxml(state.arxmlSource.text, state.arxmlSource.name); }
+      try { openArxml(state.arxmlSource.sources); }
       catch (e) { msg(`Could not reload ARXML: ${e.message}`, true); }
     },
     'copy-req': async () => {

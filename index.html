@@ -116,7 +116,20 @@
     </section>
   </div>
   <section id="arxml-view" hidden>
+    <div class="card arxml-tools" id="arxml-workspace-tools">
+      <button id="arxml-explorer" aria-pressed="true">Workspace</button>
+      <button id="arxml-communication" aria-pressed="false">Communication</button>
+      <button id="arxml-compare" aria-pressed="false">Compare files</button>
+      <span class="spacer"></span>
+      <button id="arxml-add">Add ARXML files</button>
+    </div>
     <div id="arxml-summary" class="card"></div>
+    <div id="arxml-compare-controls" class="card arxml-tools" hidden>
+      <label>Baseline <input id="arxml-baseline" type="file" accept=".arxml,.xml"></label>
+      <label>Candidate <input id="arxml-candidate" type="file" accept=".arxml,.xml"></label>
+      <label>Show <select id="arxml-diff-status"><option value="">All differences</option><option value="changed">Changed</option><option value="added">Added</option><option value="removed">Removed</option></select></label>
+      <span id="arxml-compare-error" role="alert"></span>
+    </div>
     <div class="arxml-layout">
       <aside class="card arxml-navigation">
         <div class="arxml-tools">
@@ -141,13 +154,15 @@
 </div>
 <div id="status-msg" role="status" aria-live="polite" hidden></div>
 <div id="modal-root"></div>
-<div id="drop-hint"><div>Drop an ARXML file, or a RAL file and its companions</div></div>
+<div id="drop-hint"><div>Drop related ARXML files, or a RAL file and its companions</div></div>
 <input type="file" id="file-input" accept=".yaml,.yml,.ral,.txt,.arxml,.xml,.7z" multiple hidden>
+<input type="file" id="arxml-add-input" accept=".arxml,.xml" multiple hidden>
 
 <script src="vendor/js-yaml.min.js"></script>
 <script src="js/codec.js"></script>
 <script src="js/model.js"></script>
 <script src="js/loader.js"></script>
+<script src="js/arxml-data.js"></script>
 <script src="js/arxml.js"></script>
 <script src="js/app.js"></script>
 </body>

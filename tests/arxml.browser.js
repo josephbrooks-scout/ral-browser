@@ -58,7 +58,7 @@ window.runArxmlTests = () => {
   document.getElementById('arxml-back').click();
   check(document.getElementById('arxml-selected').textContent === '/Demo/Signal', 'Back returns to source');
   document.getElementById('arxml-overview').click();
-  check(document.getElementById('arxml-selected').textContent === 'File overview' && document.getElementById('filter').value === '', 'Overview resets search and selection');
+  check(document.getElementById('arxml-selected').textContent === 'Workspace overview' && document.getElementById('filter').value === '', 'Overview resets search and selection');
 
   const many = R.parseArxml(wrap(Array.from({ length: 450 }, (_, i) =>
     `<I-SIGNAL><SHORT-NAME>Signal${i}</SHORT-NAME></I-SIGNAL>`).join('')));
