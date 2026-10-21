@@ -88,6 +88,28 @@ references (up to four hops, cycle-safe). COMPU coefficients remain in their ori
 context; the explorer does not assume a simple linear formula. This is not payload decoding, bus
 simulation, bit-overlap validation, or AUTOSAR variant evaluation. Reference direction is not Tx/Rx direction.
 
+### Messages
+
+**Messages** is a separate tab with a paged sender/receiver matrix. It lists CAN/LIN/FlexRay
+frame triggerings and PDU triggerings per configured occurrence, plus frame/PDU definitions with
+no resolved triggering. Columns show object type, network/channel, declared identifier and length
+in bytes, sending ECUs, receiving ECUs, carried PDUs/signals, findings, and source evidence.
+Identifiers retain their declared representation. A PDU does not automatically inherit a frame's ID.
+
+Senders and receivers come only from explicit triggering references to `FRAME-PORT` or
+`I-PDU-PORT` objects with `COMMUNICATION-DIRECTION` of `OUT` or `IN`, contained in an
+`ECU-INSTANCE`. Shared channel membership or XML reference direction does not imply Tx/Rx.
+Missing references, invalid directions, type/namespace mismatches and conflicting definitions
+remain explicit; ambiguous endpoint ancestry is withheld. **Unknown** does not mean absent.
+Use the ECU and direction selectors together, or search by message, network, ECU, identifier,
+carried object, source filename or finding. Object links open Communication details.
+
+This shows loaded configuration, not observed bus traffic. Related system-description files
+may be needed to resolve ports. No variant evaluation, gateway-route inference, Ethernet
+socket/service endpoint tracing, or SecOC/security compatibility checks are performed.
+For synthetic model/UI regressions, load `tests/messages.browser.js` into the app page and
+run `runMessagesTests()`.
+
 ### Compare files
 
 **Compare files** accepts one baseline and one candidate ARXML file, independently of the workspace;

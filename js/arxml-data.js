@@ -262,4 +262,99 @@
       }));
     });
   };
+
+  R.arxmlMessages = (model) => {
+    const rows = [], used = new Set();
+    const isFrame = (type) => /^(?:CAN|LIN|FLEXRAY)-FRAME$/.test(type);
+    const isPdu = (type) => /(?:^|-)PDU$/.test(type);
+    const ancestors = (record) => {
+      const result = [];
+      for (let owner = record; owner; owner = owner.parent) result.push(owner);
+      return result;
+    };
+    const conflict = (record) => ancestors(record).find((owner) => owner.conflict);
+    const value = (record, tag) => properties(record).find((row) => row.name === `${record.type}/${tag}`)?.value;
+    function add(trigger, ref, definition) {
+      const target = ref ? ref.target : definition;
+      const validTarget = !ref || !target || (trigger.type === 'PDU-TRIGGERING' ? isPdu(target.type) : isFrame(target.type));
+      const message = validTarget ? target : null;
+      const owner = trigger || definition;
+      const findings = new Set(), endpoints = [], carried = [];
+      const lineage = ancestors(owner);
+      const channel = lineage.find((item) => /PHYSICAL-CHANNEL$/.test(item.type));
+      const network = lineage.find((item) => /CLUSTER$/.test(item.type));
+      const blocked = conflict(owner);
+      if (blocked) findings.add(`Conflicting definition: ${blocked.path}; relationships withheld`);
+      if (ref && !message && validTarget) findings.add(`${ref.status}: ${ref.path}`);
+      if (!validTarget) {
+        findings.add(`Unsupported message target type: ${target.type} at ${target.path}`);
+      }
+      if (trigger && !ref && !blocked) findings.add('No absolute frame/PDU reference declared on triggering');
+      if (message) used.add(message.path);
+      const refs = trigger && !blocked ? model.outgoing.get(trigger.path) || [] : [];
+      for (const link of refs) {
+        if (link.status !== 'resolved') findings.add(`${link.status}: ${link.path}`);
+        if (!/\/(?:FRAME-PORT-REF|I-PDU-PORT-REF)(?:\[\d+\])?$/.test(link.field)) continue;
+        const port = link.target;
+        if (!port) continue;
+        const expectedPort = trigger.type === 'PDU-TRIGGERING' ? 'I-PDU-PORT' : 'FRAME-PORT';
+        if (port.type !== expectedPort) {
+          findings.add(`Unsupported endpoint type: ${port.type} at ${port.path}`);
+          continue;
+        }
+        const ambiguous = conflict(port);
+        if (ambiguous) {
+          findings.add(`Conflicting endpoint ancestry: ${ambiguous.path}`);
+          continue;
+        }
+        const ecu = ancestors(port).find((item) => item.type === 'ECU-INSTANCE');
+        const direction = value(port, 'COMMUNICATION-DIRECTION');
+        if (!ecu || !['IN', 'OUT'].includes(direction)) {
+          findings.add(`Unknown endpoint: ${port.path} (${!ecu ? 'no containing ECU' : `direction ${direction || 'not declared'}`})`);
+          continue;
+        }
+        if (!endpoints.some((item) => item.port.path === port.path && item.direction === direction)) {
+          endpoints.push({ ecu, port, direction, ref: link });
+        }
+      }
+      if (message && !conflict(message) && !blocked) {
+        for (const mapping of message.children.filter((item) => /MAPPING$/.test(item.type))) {
+          if (conflict(mapping)) {
+            findings.add(`Conflicting mapping: ${mapping.path}`);
+            continue;
+          }
+          for (const link of model.outgoing.get(mapping.path) || []) {
+            if (!/\/(?:PDU-REF|I-PDU-REF|I-SIGNAL-REF|I-SIGNAL-GROUP-REF)(?:\[\d+\])?$/.test(link.field)) continue;
+            carried.push({ ...link, mapping });
+            if (!link.target) findings.add(`${link.status}: ${link.path}`);
+          }
+        }
+      } else if (message && conflict(message)) findings.add(`Conflicting message ancestry: ${conflict(message).path}`);
+      if (!trigger) findings.add('No resolved triggering in loaded files; network and endpoints unknown');
+      if (!endpoints.some((item) => item.direction === 'OUT')) findings.add('Sender unknown: no resolved OUT port');
+      if (!endpoints.some((item) => item.direction === 'IN')) findings.add('Receivers unknown: no resolved IN port');
+      rows.push({
+        message, trigger, path: ref?.path || definition?.path || owner.path,
+        name: message?.name || ref?.path || owner.name,
+        type: message?.type || ref?.dest || owner.type, channel, network, endpoints, carried,
+        identifier: trigger && !blocked ? value(trigger, 'IDENTIFIER') : undefined,
+        length: message && !conflict(message) ? value(message, isFrame(message.type) ? 'FRAME-LENGTH' : 'LENGTH') : undefined,
+        findings: [...findings],
+        sources: [...new Set([...(owner.definitions || []), ...(message?.definitions || [])].map((item) => item.file))],
+      });
+    }
+    for (const trigger of model.records) {
+      if (!/^(?:(?:CAN|LIN|FLEXRAY)-FRAME-TRIGGERING|PDU-TRIGGERING)$/.test(trigger.type)) continue;
+      const refs = conflict(trigger) ? [] : (model.outgoing.get(trigger.path) || []).filter((ref) =>
+        /\/(?:FRAME-REF|I-PDU-REF|PDU-REF)(?:\[\d+\])?$/.test(ref.field));
+      if (refs.length) {
+        const seen = new Set();
+        for (const ref of refs) if (!seen.has(ref.path)) { seen.add(ref.path); add(trigger, ref); }
+      } else add(trigger);
+    }
+    for (const record of model.records) {
+      if ((isFrame(record.type) || isPdu(record.type)) && !used.has(record.path)) add(null, null, record);
+    }
+    return rows.sort((a, b) => a.path.localeCompare(b.path) || (a.trigger?.path || '').localeCompare(b.trigger?.path || ''));
+  };
 })();

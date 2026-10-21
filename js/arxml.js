@@ -7,6 +7,7 @@
   let model = null, filename = '', selected = null, query = '', limit = PAGE;
   let treeRoot = null, back = [], propertyLimit = PAGE, incomingLimit = 20, issueLimit = PAGE;
   let view = 'explorer', comparison = null, diffSelection = null, diffLimit = PAGE;
+  let messages = null, messageLimit = PAGE;
   const tree = $('arxml-tree'), properties = $('arxml-properties');
   function element(tag, text, className) {
     const node = document.createElement(tag);
@@ -43,18 +44,91 @@
 
   function setView(next) {
     view = next; treeRoot = null; query = ''; $('filter').value = ''; limit = PAGE;
-    for (const name of ['explorer', 'communication', 'compare']) {
+    for (const name of ['explorer', 'communication', 'messages', 'compare']) {
       $(`arxml-${name}`).setAttribute('aria-pressed', String(view === name));
     }
     $('arxml-compare-controls').hidden = view !== 'compare';
+    $('arxml-messages-panel').hidden = view !== 'messages';
+    document.querySelector('.arxml-layout').hidden = view === 'messages';
     $('arxml-mode').hidden = view !== 'explorer';
     $('arxml-up').hidden = view === 'compare';
     $('arxml-back').hidden = view === 'compare';
-    $('filter').placeholder = view === 'compare' ? 'Search changed object paths or types' : 'Search ARXML paths or object types';
+    $('filter').placeholder = view === 'messages' ? 'Search messages, networks, ECUs or findings'
+      : view === 'compare' ? 'Search changed object paths or types' : 'Search ARXML paths or object types';
+    if (view === 'messages') { messageLimit = PAGE; renderMessages(); return; }
     renderTree(); renderProperties();
   }
-  for (const name of ['explorer', 'communication', 'compare']) {
+  for (const name of ['explorer', 'communication', 'messages', 'compare']) {
     $(`arxml-${name}`).addEventListener('click', () => setView(name));
+  }
+
+  function renderMessages() {
+    if (!messages) {
+      messages = R.arxmlMessages(model);
+      const select = $('arxml-message-ecu');
+      select.replaceChildren(element('option', 'All ECUs'));
+      select.firstChild.value = '';
+      for (const ecu of model.types.get('ECU-INSTANCE') || []) {
+        const option = element('option', ecu.path);
+        option.value = ecu.path; select.append(option);
+      }
+    }
+    const ecu = $('arxml-message-ecu').value, direction = $('arxml-message-direction').value;
+    const matching = messages.filter((row) => {
+      if ((ecu || direction) && !row.endpoints.some((endpoint) =>
+        (!ecu || endpoint.ecu.path === ecu) && (!direction || endpoint.direction === direction))) return false;
+      return [row.path, row.type, row.channel?.path, row.network?.path, row.identifier, row.trigger?.path,
+        ...row.endpoints.map((endpoint) => endpoint.ecu.path), ...row.carried.map((link) => link.path),
+        ...row.findings, ...row.sources].join(' ').toLowerCase().includes(query);
+    });
+    const list = $('arxml-message-list');
+    list.replaceChildren(element('p', 'Configured communication only, not observed bus traffic. IN/OUT is read from referenced ECU ports, never inferred from reference direction. Unknown does not mean no sender or receiver. Variants are not evaluated; no SecOC/security checks or gateway route inference.', 'arxml-notice'));
+    const table = element('table', undefined, 'arxml-messages-table'), head = element('tr');
+    for (const label of ['Message / Type', 'Network / Channel', 'Identifier / Length', 'Sending ECUs', 'Receiving ECUs', 'Carried PDUs / Signals', 'Evidence / Findings']) head.append(element('th', label));
+    table.append(head);
+    const objectLink = (record) => button(record.path, () => { selected = null; back = []; setView('communication'); navigate(record); }, record.type);
+    for (const row of matching.slice(0, messageLimit)) {
+      const tr = element('tr'), name = element('td');
+      if (row.message) name.append(objectLink(row.message)); else name.append(element('strong', row.path));
+      name.append(element('small', row.type, 'arxml-property-path'));
+      const channel = element('td');
+      for (const record of [row.network, row.channel].filter(Boolean)) channel.append(objectLink(record));
+      if (!channel.childNodes.length) channel.textContent = 'Unknown / not declared';
+      const layout = element('td', `ID: ${row.identifier ?? 'not declared'}`);
+      layout.append(element('small', `Length: ${row.length === undefined ? 'not declared' : `${row.length} bytes`}`, 'arxml-property-path'));
+      const sender = element('td'), receiver = element('td');
+      for (const [cell, direction] of [[sender, 'OUT'], [receiver, 'IN']]) {
+        const ecus = new Map(row.endpoints.filter((item) => item.direction === direction).map((item) => [item.ecu.path, item.ecu]));
+        for (const ecu of ecus.values()) cell.append(objectLink(ecu));
+        if (!ecus.size) cell.textContent = 'Unknown';
+      }
+      const carried = element('td');
+      for (const link of row.carried) {
+        if (link.target) carried.append(objectLink(link.target));
+        else carried.append(element('p', `${link.path} (${link.status})`, 'arxml-conflict'));
+      }
+      if (!row.carried.length) carried.textContent = 'Not resolved / not declared';
+      const evidence = element('td');
+      for (const finding of row.findings) evidence.append(element('p', finding, 'arxml-conflict'));
+      const details = element('details');
+      details.append(element('summary', 'Source evidence'));
+      if (row.trigger) details.append(objectLink(row.trigger));
+      for (const endpoint of row.endpoints) {
+        details.append(element('p', `${endpoint.direction}: ${endpoint.ecu.path}`), objectLink(endpoint.port),
+          element('small', `${endpoint.ref.source.path} → ${endpoint.ref.path} · ${endpoint.ref.field} · ${endpoint.ref.file}`, 'arxml-property-path'));
+      }
+      for (const link of row.carried) details.append(element('small', `${link.mapping.path} → ${link.path} · ${link.file}`, 'arxml-property-path'));
+      details.append(element('p', row.sources.join(', ')));
+      evidence.append(details);
+      tr.append(name, channel, layout, sender, receiver, carried, evidence); table.append(tr);
+    }
+    list.append(table);
+    if (!matching.length) list.append(element('p', 'No matching messages. Supported rows are CAN/LIN/FlexRay frame triggerings, PDU triggerings, and frame/PDU definitions. Load related system-description files to resolve ECU ports.'));
+    if (matching.length > messageLimit) list.append(button('Show more messages', () => { messageLimit += PAGE; renderMessages(); }));
+    $('arxml-message-count').textContent = `${Math.min(messageLimit, matching.length)} of ${matching.length} matching message rows (${messages.length} total)`;
+  }
+  for (const id of ['arxml-message-ecu', 'arxml-message-direction']) {
+    $(id).addEventListener('change', () => { messageLimit = PAGE; renderMessages(); });
   }
   function renderSources() {
     properties.append(element('h3', 'Workspace files'));
@@ -348,9 +422,14 @@
     renderProperties(); renderTree();
     properties.scrollTop = 0;
   });
-  R.filterArxml = (text) => { query = text.trim().toLowerCase(); limit = PAGE; renderTree(); };
+  R.filterArxml = (text) => {
+    query = text.trim().toLowerCase(); limit = PAGE; messageLimit = PAGE;
+    if (view === 'messages') renderMessages(); else renderTree();
+  };
   R.showArxml = (parsed, name) => {
     model = parsed; filename = name; selected = null; treeRoot = null; back = []; query = ''; limit = PAGE;
+    messages = null; messageLimit = PAGE;
+    $('arxml-message-ecu').value = ''; $('arxml-message-direction').value = '';
     $('arxml-mode').value = 'categories';
     $('main').hidden = true; $('arxml-view').hidden = false; document.body.classList.add('arxml-active');
     $('filter').value = ''; $('filter').placeholder = 'Search ARXML paths or object types';
@@ -374,6 +453,7 @@
     $('filter').placeholder = 'Filter services by name or 0x ID';
     $('filter').value = R.app?.state.filter || '';
     model = null;
+    messages = null; $('arxml-message-list').replaceChildren();
     selected = null; treeRoot = null; back = []; comparison = null; diffSelection = null;
     tree.replaceChildren(); properties.replaceChildren();
     for (const side of ['baseline', 'candidate']) {

@@ -119,11 +119,20 @@
     <div class="card arxml-tools" id="arxml-workspace-tools">
       <button id="arxml-explorer" aria-pressed="true">Workspace</button>
       <button id="arxml-communication" aria-pressed="false">Communication</button>
+      <button id="arxml-messages" aria-pressed="false">Messages</button>
       <button id="arxml-compare" aria-pressed="false">Compare files</button>
       <span class="spacer"></span>
       <button id="arxml-add">Add ARXML files</button>
     </div>
     <div id="arxml-summary" class="card"></div>
+    <section id="arxml-messages-panel" class="card" hidden aria-label="Configured messages">
+      <div class="arxml-tools">
+        <label>ECU <select id="arxml-message-ecu" aria-label="Filter messages by ECU"><option value="">All ECUs</option></select></label>
+        <label>Direction <select id="arxml-message-direction" aria-label="Filter messages by direction"><option value="">Sending or receiving</option><option value="OUT">Sending</option><option value="IN">Receiving</option></select></label>
+        <span id="arxml-message-count" role="status"></span>
+      </div>
+      <div id="arxml-message-list"></div>
+    </section>
     <div id="arxml-compare-controls" class="card arxml-tools" hidden>
       <label>Baseline <input id="arxml-baseline" type="file" accept=".arxml,.xml"></label>
       <label>Candidate <input id="arxml-candidate" type="file" accept=".arxml,.xml"></label>
